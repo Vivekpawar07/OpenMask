@@ -10,6 +10,7 @@ const signupValidation = (req,res,next)=>{
           })
     })
     const data = {username:req.body.username,email:req.body.email,password:req.body.password,confirmPassword:req.body.confirmPassword}
+    console.log(data)
     const {error} = Schema.validate(data)
     if(error){
         return res.status(400).json({message:`error ${error}`})
