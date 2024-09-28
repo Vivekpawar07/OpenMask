@@ -1,4 +1,4 @@
 # Ignore the .env file
 client/.env
 server/.env
-server/public
+server/public/
