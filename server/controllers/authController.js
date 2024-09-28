@@ -92,7 +92,8 @@ const login = async (req, res) => {
             email: email,
             username: user.username,
             profilePicture: user.profilePic,
-            fullName: user.fullName
+            fullName: user.fullName,
+            _id: user._id
         });
     } catch (err) {
         res.status(500).json({ message: "Problem logging in", success: false });

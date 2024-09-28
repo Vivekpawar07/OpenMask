@@ -1,13 +1,13 @@
 const  Notification = require("../models/notification.js") ;
 const Post = require('../models/post.js') ;
 const User = require('../models/user.js');
-import { v2 as cloudinary } from "cloudinary";
+const cloudinary = require('cloudinary').v2;
 
-export const createPost = async (req, res) => {
+const createPost = async (req, res) => {
 	try {
-		const { text } = req.body;
-		let { img } = req.body;
-		const userId = req.user._id.toString();
+		const text = req.body.caption;
+		const userId = req.body._id.toString();
+		
 
 		const user = await User.findById(userId);
 		if (!user) return res.status(404).json({ message: "User not found" });
@@ -16,15 +16,25 @@ export const createPost = async (req, res) => {
 			return res.status(400).json({ error: "Post must have text or image" });
 		}
 
-		if (img) {
-			const uploadedResponse = await cloudinary.uploader.upload(img);
-			img = uploadedResponse.secure_url;
-		}
+		if (req.file) {
+            try {
+                if (req.file) {
+                    const cloudinaryUpload = await cloudinary.uploader.upload(req.file.path, {
+                        folder: "user_posts", 
+                    });
+                    postUrl = cloudinaryUpload.secure_url; 
+                }
+            } catch (err) {
+                console.error(err);
+                res.status(500).json({ message: "Error uploading profile picture", success: false });
+                return;
+            }
+        }
 
 		const newPost = new Post({
 			user: userId,
 			text,
-			img,
+			img:postUrl,
 		});
 
 		await newPost.save();
@@ -34,15 +44,14 @@ export const createPost = async (req, res) => {
 		console.log("Error in createPost controller: ", error);
 	}
 };
-
-export const deletePost = async (req, res) => {
+const deletePost = async (req, res) => {
 	try {
 		const post = await Post.findById(req.params.id);
 		if (!post) {
 			return res.status(404).json({ error: "Post not found" });
 		}
 
-		if (post.user.toString() !== req.user._id.toString()) {
+		if (post.user.toString() !== req.body._id.toString()) {
 			return res.status(401).json({ error: "You are not authorized to delete this post" });
 		}
 
@@ -59,12 +68,11 @@ export const deletePost = async (req, res) => {
 		res.status(500).json({ error: "Internal server error" });
 	}
 };
-
-export const commentOnPost = async (req, res) => {
+const commentOnPost = async (req, res) => {
 	try {
-		const { text } = req.body;
+		const text  = req.body.text;
 		const postId = req.params.id;
-		const userId = req.user._id;
+		const userId = req.body._id;
 
 		if (!text) {
 			return res.status(400).json({ error: "Text field is required" });
@@ -87,9 +95,9 @@ export const commentOnPost = async (req, res) => {
 	}
 };
 
-export const likeUnlikePost = async (req, res) => {
+const likeUnlikePost = async (req, res) => {
 	try {
-		const userId = req.user._id;
+		const userId = req.body._id;
 		const { id: postId } = req.params;
 
 		const post = await Post.findById(postId);
@@ -121,6 +129,7 @@ export const likeUnlikePost = async (req, res) => {
 			await notification.save();
 
 			const updatedLikes = post.likes;
+			console.log(updatedLikes);
 			res.status(200).json(updatedLikes);
 		}
 	} catch (error) {
@@ -129,7 +138,7 @@ export const likeUnlikePost = async (req, res) => {
 	}
 };
 
-export const getAllPosts = async (req, res) => {
+const getAllPosts = async (req, res) => {
 	try {
 		const posts = await Post.find()
 			.sort({ createdAt: -1 })
@@ -153,7 +162,7 @@ export const getAllPosts = async (req, res) => {
 	}
 };
 
-export const getLikedPosts = async (req, res) => {
+const getLikedPosts = async (req, res) => {
 	const userId = req.params.id;
 
 	try {
@@ -177,9 +186,9 @@ export const getLikedPosts = async (req, res) => {
 	}
 };
 
-export const getFollowingPosts = async (req, res) => {
+const getFollowingPosts = async (req, res) => {
 	try {
-		const userId = req.user._id;
+		const userId = req.body._id;
 		const user = await User.findById(userId);
 		if (!user) return res.status(404).json({ error: "User not found" });
 
@@ -203,7 +212,7 @@ export const getFollowingPosts = async (req, res) => {
 	}
 };
 
-export const getUserPosts = async (req, res) => {
+const getUserPosts = async (req, res) => {
 	try {
 		const { username } = req.params;
 
@@ -226,4 +235,9 @@ export const getUserPosts = async (req, res) => {
 		console.log("Error in getUserPosts controller: ", error);
 		res.status(500).json({ error: "Internal server error" });
 	}
+};
+
+module.exports = {
+    getAllPosts,getFollowingPosts,getLikedPosts,getUserPosts,createPost,likeUnlikePost,commentOnPost,
+    deletePost
 };
