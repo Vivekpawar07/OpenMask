@@ -1,5 +1,6 @@
 const User = require('../models/user')
 const Notification = require('../models/notification');
+const Message = require('../models/message');
 const getUserProfile = async (req, res) => {
     const { username } = req.params;
     try {
@@ -147,9 +148,34 @@ const updateUser = async()=>{
 		res.status(500).json({ error: error.message });
 	}
 }
+const getChatList = async (req, res) => {
+	try {
+		const loggedInUserId = req.params; 
+		
+		const messages = await Message.find({
+            $or: [{ sender: loggedInUserId }, { receiver: loggedInUserId }]
+        }).select("sender receiver");
+        console.log(messages)   
+		const userIdsInConversation = new Set();
+		messages.forEach((message) => {
+			userIdsInConversation.add(message.sender.toString());
+			userIdsInConversation.add(message.receiver.toString());
+		});
+		
+		userIdsInConversation.delete(loggedInUserId.toString());
+
+		const usersInConversation = await User.find({ _id: { $in: Array.from(userIdsInConversation) } }).select("-password");
+
+		res.status(200).json(usersInConversation);
+	} catch (error) {
+		console.error("Error in getChatList: ", error.message);
+		res.status(500).json({ error: "Internal server error" });
+	}
+};
 module.exports = {
     getUserProfile,
     followUnfollow,
     Suggestion,
-    updateUser
+    updateUser,
+    getChatList
 };

@@ -10,7 +10,8 @@ const cloudinary = require('cloudinary').v2;
 const uploadMiddleware = require('./middlewares/multer.js');  
 const post = require('./routes/post.js');
 const app = express();
-
+const messages = require('./routes/messagesRoute.js');
+const Anonymous = require('./routes/AnonymousPost.js');
 // Middleware
 app.use(cors());
 app.use(helmet());
@@ -40,6 +41,8 @@ app.post('/upload', (req, res) => {
 app.use('/auth',  AuthRouter); 
 app.use('/user', userRoutes);
 app.use('/feed',post);
+app.use('/chat', messages);
+app.use('/anonymous',Anonymous);
 
 // Start server
 app.listen(PORT, () => {
