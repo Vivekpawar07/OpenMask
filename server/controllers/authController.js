@@ -26,6 +26,7 @@ const signup = async (req, res) => {
     try {
         const { username, email, password, fullName, dob } = req.body;
         let profilePicUrl = null;
+        console.log(req.file)
         if (req.file) {
             try {
                 if (req.file) {
@@ -56,15 +57,14 @@ const signup = async (req, res) => {
         await newUser.save();
 
         const jwtToken = jwt.sign({ email: newUser.email }, process.env.JWT_SECRET, { expiresIn: '24h' });
+        const userResponse = newUser.toObject();
+        delete userResponse.password; 
 
         res.status(201).json({
             message: "Signup successful",
             success: true,
             token: jwtToken,
-            email: newUser.email,
-            username: newUser.username,
-            profilePicture: newUser.profilePic,
-            fullName: newUser.fullName
+            user:userResponse
         });
     } catch (err) {
         console.error(err);
@@ -84,16 +84,13 @@ const login = async (req, res) => {
             return res.status(403).json({ message: "Invalid password", success: false });
         }
         const jwtToken = jwt.sign({ email: user.email }, process.env.JWT_SECRET, { expiresIn: '24h' });
-
+        const userResponse = user.toObject();
+        delete userResponse.password; 
         res.status(201).json({
             message: "Login successful",
             success: true,
             token: jwtToken,
-            email: email,
-            username: user.username,
-            profilePicture: user.profilePic,
-            fullName: user.fullName,
-            _id: user._id
+            user:userResponse
         });
     } catch (err) {
         res.status(500).json({ message: "Problem logging in", success: false });

@@ -12,6 +12,7 @@ const post = require('./routes/post.js');
 const app = express();
 const messages = require('./routes/messagesRoute.js');
 const Anonymous = require('./routes/AnonymousPost.js');
+
 // Middleware
 app.use(cors());
 app.use(helmet());
@@ -27,15 +28,6 @@ cloudinary.config({
     secure: true
 });
 
-// Set up multer
-app.post('/upload', (req, res) => {
-  uploadMiddleware(req, res, (err) => {
-    if (err) {
-      return res.status(400).send(err.message);  
-    }
-    res.send('File uploaded successfully');
-  });
-});
 
 // Routes
 app.use('/auth',  AuthRouter); 
