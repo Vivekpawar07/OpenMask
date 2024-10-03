@@ -56,25 +56,33 @@ const followUnfollow = async (req, res) => {
 };
 const Suggestion = async (req, res) => {
     try {
-        const currentUser = req.body._id;
-        const usersFollowed = await User.findById(currentUser).select('following');
-        if (!usersFollowed || !usersFollowed.following) {
+        const currentUserId = req.body._id;
+
+        const currentUser = await User.findById(currentUserId).select('following');
+        if (!currentUser || !currentUser.following) {
             return res.status(404).json({ message: "User not found or no users followed" });
         }
+
+        const usersFollowed = currentUser.following;
 
         const users = await User.aggregate([
             {
                 $match: {
-                    _id: { $ne: currentUser },
-                    _id: { $nin: usersFollowed.following }
+                    _id: { $ne: currentUser._id },
+                    _id: { $nin: usersFollowed } 
                 }
             },
-            { $sample: { size: 10 } }  
+            { $sample: { size: 10 } }, 
+            {
+                $project: {                 
+                    password: 0,
+                    email: 0,               
+                    __v: 0
+                }
+            }
         ]);
 
         const suggestedUsers = users.slice(0, 4);
-
-        suggestedUsers.forEach(user => user.password = null);
 
         return res.status(200).json({
             message: "Suggested users",

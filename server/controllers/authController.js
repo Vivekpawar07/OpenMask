@@ -26,7 +26,7 @@ const signup = async (req, res) => {
     try {
         const { username, email, password, fullName, dob } = req.body;
         let profilePicUrl = null;
-        console.log(req.file)
+        
         if (req.file) {
             try {
                 if (req.file) {

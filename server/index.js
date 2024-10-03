@@ -7,14 +7,20 @@ const PORT = process.env.PORT;
 const AuthRouter = require('./routes/authRouter.js');
 const userRoutes = require('./routes/usersRoute.js');
 const cloudinary = require('cloudinary').v2;
-const uploadMiddleware = require('./middlewares/multer.js');  
+// const uploadMiddleware = require('./middlewares/multer.js');  
 const post = require('./routes/post.js');
 const app = express();
 const messages = require('./routes/messagesRoute.js');
 const Anonymous = require('./routes/AnonymousPost.js');
 
+
 // Middleware
-app.use(cors());
+app.use(cors({
+    origin : 'http://localhost:3000',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'], 
+    allowedHeaders: ['Authorization', 'Content-Type'],
+    credentials: true
+}));
 app.use(helmet());
 app.use(express.json({ limit: "30mb" }));
 app.use(express.urlencoded({ limit: "30mb", extended: true }));

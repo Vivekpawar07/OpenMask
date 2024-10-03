@@ -4,45 +4,45 @@ const User = require('../models/user.js');
 const cloudinary = require('cloudinary').v2;
 
 const createPost = async (req, res) => {
-	try {
-		const text = req.body.caption;
-		const userId = req.body._id.toString();
-		
+    try {
+        const text = req.body.caption;
+        const userId = req.body._id.toString();
+        let postUrl; // Declare postUrl here for proper scope
 
-		const user = await User.findById(userId);
-		if (!user) return res.status(404).json({ message: "User not found" });
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ message: "User not found" });
 
-		if (!text && !img) {
-			return res.status(400).json({ error: "Post must have text or image" });
-		}
+        // Ensure at least one of text or image is provided
+        if (!text && !req.file) {
+            return res.status(400).json({ error: "Post must have text or image" });
+        }
 
-		if (req.file) {
+        // Handle image upload if a file is present
+        if (req.file) {
             try {
-                if (req.file) {
-                    const cloudinaryUpload = await cloudinary.uploader.upload(req.file.path, {
-                        folder: "user_posts", 
-                    });
-                    postUrl = cloudinaryUpload.secure_url; 
-                }
+                const cloudinaryUpload = await cloudinary.uploader.upload(req.file.path, {
+                    folder: "user_posts",
+                });
+                postUrl = cloudinaryUpload.secure_url; // Store the image URL
             } catch (err) {
                 console.error(err);
-                res.status(500).json({ message: "Error uploading profile picture", success: false });
-                return;
+                return res.status(500).json({ message: "Error uploading image", success: false });
             }
         }
 
-		const newPost = new Post({
-			user: userId,
-			text,
-			img:postUrl,
-		});
+        // Create a new post
+        const newPost = new Post({
+            user: userId,
+            text,
+            img: postUrl || null, // Assign postUrl or null if no image
+        });
 
-		await newPost.save();
-		res.status(201).json(newPost);
-	} catch (error) {
-		res.status(500).json({ error: "Internal server error" });
-		console.log("Error in createPost controller: ", error);
-	}
+        await newPost.save(); // Save the post to the database
+        res.status(201).json(newPost); // Respond with the newly created post
+    } catch (error) {
+        console.error("Error in createPost controller:", error);
+        res.status(500).json({ error: "Internal server error" });
+    }
 };
 const deletePost = async (req, res) => {
 	try {

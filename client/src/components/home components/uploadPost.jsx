@@ -1,16 +1,14 @@
-import {React,useState,useEffect} from "react";
+import {React,useContext} from "react";
 import Button from '@mui/material/Button';
 import SendIcon from '@mui/icons-material/Send';
+import { AuthContext } from '../../context/AuthContext';
 export default function Upload(){
-    const [profilePic,setprofilePic] = useState('');
-    useEffect(()=>{
-        setprofilePic(localStorage.getItem('profilePicture'));
-    },[])
+    const {user} = useContext(AuthContext);
     return(
         <>
         <div className=" p-2 flex flex-col items-end gap-3 w-full h-[110px] bg-custom_grey rounded-2xl">
             <div className="flex gap-2 w-full">
-                <img src={`${process.env.REACT_APP_BACKEND_SERVER_URL}/profile_picture/${profilePic}`} alt="profile picture" 
+                <img src={`${user.profilePic}`} alt="profile picture" 
                 className="rounded-full h-[45px] w-[45px]"/>
             <div 
             className="flex items-center  border-[1px] border-custom_grey  w-full

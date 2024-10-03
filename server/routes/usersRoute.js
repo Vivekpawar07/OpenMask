@@ -6,7 +6,7 @@ const router = express.Router();
 
 router.get('/profile/:username', procted, getUserProfile);
 router.post('/follow/:id', procted , followUnfollow);
-router.get('/getSuggestion', procted, Suggestion);
+router.post('/getSuggestion', procted, Suggestion);
 // router.get('/update',procted,updateUser);
 router.get('/chat/:id',procted, getChatList);
 

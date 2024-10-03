@@ -4,7 +4,7 @@ const {getAllPosts,getFollowingPosts,getLikedPosts,getUserPosts,createPost,likeU
     deletePost} = require('../controllers/postController');
 const uplaodMideleware = require('../middlewares/multer.js');
 router.get("/all", protectRoute, getAllPosts);
-router.get("/following", protectRoute, getFollowingPosts);
+router.post("/following", protectRoute, getFollowingPosts);
 router.get("/likes/:id", protectRoute, getLikedPosts);
 router.get("/user/:username", protectRoute, getUserPosts);
 router.post("/create", uplaodMideleware,protectRoute, createPost);

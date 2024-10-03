@@ -1,5 +1,14 @@
-# Ignore the .env file
+# Ignore environment files
 client/.env
 server/.env
+
+# Ignore node_modules (common for Node.js projects)
+server/node_modules/
+
+# Ignore public folder if necessary
 server/public/
-server/node_modules
+
+# Ignore machine learning backend models and specific Python scripts
+ML backend/models/
+ML backend/GRE.py
+ML backend/sentiment.py

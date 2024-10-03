@@ -9,15 +9,11 @@ export default function RefreshHandler({ setIsAuthenticated }) {
     const token = localStorage.getItem('token');
     if (token) {
       setIsAuthenticated(true);
-      console.log('Token from localStorage:', token); 
-      console.log('Current location:', location.pathname);
-
       if (
         location.pathname === '/' ||
         location.pathname === '/login' ||
         location.pathname === '/signup'
       ) {
-        console.log('Auth fail for ',location.pathname);
         navigate('/home', { replace: true });
       }
     }
