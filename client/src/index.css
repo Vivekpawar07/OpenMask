@@ -1,6 +1,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
 body {
   @apply bg-custom_black text-white capitalize font-poppins;
 }

@@ -68,7 +68,7 @@ export default function Feed() {
     }, [user]);
 
     return (
-        <div className="feed-container">
+        <div className="flex flex-col gap-3 justify-center">
             {/* Following posts */}
             {loadingPosts ? (
                 <p>Loading posts...</p>

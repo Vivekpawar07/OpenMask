@@ -1,8 +1,7 @@
 import {React, useContext}  from "react";
-import Nav from "./main component/nav";
-import Suggestion from "./main component/suggestion";
-import SearchBar from "./main component/searchbar";
-import { AuthContext } from '../context/AuthContext';
+import Nav from "./nav";
+import Suggestion from "./suggestion";
+import SearchBar from "./searchbar";
 export default function Main(){
     return(
         <>

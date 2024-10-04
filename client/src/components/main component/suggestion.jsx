@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
+import { Link } from "react-router-dom";
 import SettingsIcon from '@mui/icons-material/Settings';
 import { AuthContext } from '../../context/AuthContext';
 import GetSuggestion from './suggestedUser';
@@ -45,6 +46,7 @@ export default function Suggestion() {
         <div className="fixed h-[100%] flex flex-col gap-5 justify-self-end w-[15%] bg-custom_grey p-2">
             <div className="flex h-[60px] w-full items-center justify-evenly">
                 <SettingsIcon />
+                <Link to={`/profile/${user?.username}`}>
                 <div className="flex items-center gap-2">
                     <p>{user?.username}</p>
                     <img 
@@ -53,11 +55,12 @@ export default function Suggestion() {
                         className="rounded-full h-[45px] w-[45px]" 
                     />
                 </div>
+                </Link>
             </div>
             <div>
                 <h1 className="text-xm font-bold">Suggestions For You</h1>
             </div>
-            <div>
+            <div className="flex flex-col gap-3">
                 {loading ? (
                     <p>Loading suggestions...</p>
                 ) : suggestions.length > 0 ? (

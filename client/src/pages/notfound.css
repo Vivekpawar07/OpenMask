@@ -1,0 +1,27 @@
+/* notfound.css */
+@keyframes textAnimation {
+    0%, 100% { opacity: 0.1; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.1); }
+  }
+  
+  @keyframes fadeAnimation {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+  }
+  
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+  
+  .animate-text {
+    animation: textAnimation 3s infinite;
+  }
+  
+  .animate-fade {
+    animation: fadeAnimation 2s ease-in-out;
+  }
+  
+  .animate-float {
+    animation: float 4s infinite ease-in-out;
+  }

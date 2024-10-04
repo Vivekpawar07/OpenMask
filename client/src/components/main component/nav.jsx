@@ -6,7 +6,7 @@ import MessageIcon from '@mui/icons-material/Message';
 import ExploreIcon from '@mui/icons-material/Explore';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import AccountCircleRoundedIcon from '@mui/icons-material/AccountCircleRounded';
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import CreatePost from "./createPost";
 
 export default function Nav() {
@@ -27,18 +27,22 @@ export default function Nav() {
         <div className="h-[100%] w-[15%] fixed flex-shrink flex flex-col justify-start gap-8 flex-wrap py-5 p-2 bg-custom_grey">
             <h1 className="text-2xl font-bold text-white">OpenMask</h1>
             <div className="flex flex-col gap-5">
+                <Link to='/home'>
                 <div className="flex gap-2 h-[30px] w-[160px] p-2 justify-start items-center rounded-xl transition-colors duration-300 hover:bg-gray-700">
                     <HomeIcon className="text-white text-xs"/>
                     <p className="text-white text-xs">Home</p>
                 </div>
+                </Link>
                 <div className="flex gap-2 h-[30px] w-[160px] p-2 justify-start items-center rounded-xl transition-colors duration-300 hover:bg-gray-700">
                     <AccountCircleRoundedIcon className="text-white text-xs"/>
                     <p className="text-white text-xs">Anonymous</p>
                 </div>
+                <Link to='/message'>
                 <div className="flex gap-2 h-[30px] w-[160px] p-2 justify-start items-center rounded-xl transition-colors duration-300 hover:bg-gray-700">
-                    <MessageIcon className="text-white text-xs"/>
+                    <MessageIcon className="text-white text-xs" />
                     <p className="text-white text-xs">Message</p>
                 </div>
+                </Link>
                 <div className="flex gap-2 h-[30px] w-[160px] p-2 justify-start items-center rounded-xl transition-colors duration-300 hover:bg-gray-700">
                     <ExploreIcon className="text-white text-xs"/>
                     <p className="text-white text-xs">Explore</p>
@@ -51,10 +55,12 @@ export default function Nav() {
                     <AddCircleIcon className="text-white text-xs"/>
                     <p className="text-white text-xs">Create Post</p>
                 </div>
+                <Link to='/notification'>
                 <div className="flex gap-2 h-[30px] w-[160px] p-2 justify-start items-center rounded-xl transition-colors duration-300 hover:bg-gray-700">
                     <NotificationsIcon className="text-white text-xs"/>
                     <p className="text-white text-xs">Notifications</p>
                 </div>
+                </Link>
             </div>
             <hr />
             <div className="flex flex-col gap-5">

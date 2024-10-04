@@ -1,6 +1,9 @@
 const User = require('../models/user')
 const Notification = require('../models/notification');
 const Message = require('../models/message');
+const mongoose = require('mongoose');
+
+
 const getUserProfile = async (req, res) => {
     const { username } = req.params;
     try {
@@ -120,7 +123,6 @@ const updateUser = async()=>{
 
 		if (profileImg) {
 			if (user.profileImg) {
-				// https://res.cloudinary.com/dyfqon1v6/image/upload/v1712997552/zmxorcxexpdbh8r0bkjb.png
 				await cloudinary.uploader.destroy(user.profileImg.split("/").pop().split(".")[0]);
 			}
 
@@ -158,22 +160,26 @@ const updateUser = async()=>{
 }
 const getChatList = async (req, res) => {
 	try {
-		const loggedInUserId = req.params; 
-		
+		const loggedInUserId = req.params.id;
+		if (!mongoose.Types.ObjectId.isValid(loggedInUserId)) {
+			return res.status(400).json({ error: "Invalid user ID" });
+		}
+
 		const messages = await Message.find({
-            $or: [{ sender: loggedInUserId }, { receiver: loggedInUserId }]
-        }).select("sender receiver");
-        console.log(messages)   
+			$or: [{ senderId: loggedInUserId }, { receiverId: loggedInUserId }]
+		});
+        console.log(messages)
 		const userIdsInConversation = new Set();
 		messages.forEach((message) => {
-			userIdsInConversation.add(message.sender.toString());
-			userIdsInConversation.add(message.receiver.toString());
+			userIdsInConversation.add(message.senderId.toString());
+			userIdsInConversation.add(message.receiverId.toString());
 		});
-		
+
 		userIdsInConversation.delete(loggedInUserId.toString());
 
 		const usersInConversation = await User.find({ _id: { $in: Array.from(userIdsInConversation) } }).select("-password");
-
+        console.log(usersInConversation);
+		// Send the list of users in the conversation
 		res.status(200).json(usersInConversation);
 	} catch (error) {
 		console.error("Error in getChatList: ", error.message);

@@ -5,11 +5,12 @@ import SignupPage from "./pages/signup";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import RefreshHandler from "./refreshHandler";
 import HomePage from "./pages/home";
-import Main from "./components/componentHolder";
+import Main from "./components/main component/componentHolder";
 import Anonymous from "./pages/anonymous";
-
-
-
+import Messages from "./pages/message";
+import Notifications from "./pages/notification";
+import Profile from "./pages/profile";
+import NotFound from "./pages/404";
 function AppContent() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const location = useLocation();
@@ -22,7 +23,7 @@ function AppContent() {
     </GoogleOAuthProvider>
   );
 
-  const shouldRenderMain = !['/login', '/signup'].includes(location.pathname);
+  const shouldRenderMain = !['/login', '/signup',"/",'*'].includes(location.pathname);
 
   return (
     <>
@@ -34,6 +35,10 @@ function AppContent() {
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/home" element={<PrivateRoute isAuthenticated={isAuthenticated} element={<HomePage />} />} />
         <Route path="/anonymous" element={ <Anonymous/>} />
+        <Route path="/message" element={<PrivateRoute isAuthenticated={isAuthenticated} element={<Messages />} />} />
+        <Route path="/notification" element={<PrivateRoute isAuthenticated={isAuthenticated} element={<Notifications />} />} />
+        <Route path="/profile/:username" element={<PrivateRoute isAuthenticated={isAuthenticated} element={<Profile />} />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </>
   );
