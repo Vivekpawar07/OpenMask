@@ -12,8 +12,14 @@ module.exports = {
         'custom_black':'#151515',
         'custom_grey':"#2c2c2c",
         'custom_blue':'#3a6f98'
-      }
+      },
+      animation: {
+        'spin-slow': 'spin 3s linear infinite', // Slower spinning animation
+      },
     },
   },
   plugins: [require('daisyui')],
+  daisyui: {
+    themes: false, // Disable DaisyUI themes to prevent conflicts
+  },
 }

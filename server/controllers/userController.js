@@ -2,6 +2,7 @@ const User = require('../models/user')
 const Notification = require('../models/notification');
 const Message = require('../models/message');
 const mongoose = require('mongoose');
+const { options } = require('../routes/messagesRoute');
 
 
 const getUserProfile = async (req, res) => {
@@ -167,29 +168,119 @@ const getChatList = async (req, res) => {
 
 		const messages = await Message.find({
 			$or: [{ senderId: loggedInUserId }, { receiverId: loggedInUserId }]
-		});
-        console.log(messages)
-		const userIdsInConversation = new Set();
+		}).sort({ createdAt: -1 }); 
+
+		const conversationMap = new Map();
+
 		messages.forEach((message) => {
-			userIdsInConversation.add(message.senderId.toString());
-			userIdsInConversation.add(message.receiverId.toString());
+			const otherUserId =
+				message.senderId.toString() === loggedInUserId
+					? message.receiverId.toString()
+					: message.senderId.toString();
+
+			if (!conversationMap.has(otherUserId)) {
+				conversationMap.set(otherUserId, message);
+			}
 		});
 
-		userIdsInConversation.delete(loggedInUserId.toString());
+		const userIdsInConversation = Array.from(conversationMap.keys());
+		const usersInConversation = await User.find({
+			_id: { $in: userIdsInConversation }
+		}).select("-password");
 
-		const usersInConversation = await User.find({ _id: { $in: Array.from(userIdsInConversation) } }).select("-password");
-        console.log(usersInConversation);
-		// Send the list of users in the conversation
-		res.status(200).json(usersInConversation);
+		const response = usersInConversation.map((user) => {
+			const lastMessage = conversationMap.get(user._id.toString());
+			return {
+				user,
+				lastMessage: {
+					text: lastMessage.message, 
+					createdAt: lastMessage.createdAt,
+                    senderId: lastMessage.senderId,
+                    receiverId: lastMessage.receiverId
+				}
+			};
+		});
+
+		res.status(200).json(response);
 	} catch (error) {
 		console.error("Error in getChatList: ", error.message);
 		res.status(500).json({ error: "Internal server error" });
 	}
 };
+const suggestedChat = async (req, res) => {
+    try {
+        const { userId } = req.params.id;
+
+        const currentUser = await User.findById(userId).select('following followers');
+        if (!currentUser || (!currentUser.following && !currentUser.followers)) {
+            return res.status(404).json({ message: "User not found or no followers/following" });
+        }
+
+        const usersFollowing = currentUser.following; 
+        const usersFollowers = currentUser.followers;
+
+        const userNetwork = [...new Set([...usersFollowing, ...usersFollowers])];
+
+        const messages = await Message.find({
+            $or: [{ senderId: userId }, { receiverId: userId }]
+        });
+
+        const userIdsInChat = new Set();
+        messages.forEach(message => {
+            userIdsInChat.add(message.senderId.toString());
+            userIdsInChat.add(message.receiverId.toString());
+        });
+        const usersWithoutChat = userNetwork.filter(userId => !userIdsInChat.has(userId.toString()));
+
+        if (usersWithoutChat.length === 0) {
+            return res.status(200).json({ message: "No new users to suggest for chat" });
+        }
+        const suggestedUsers = await User.aggregate([
+            {
+                $match: {
+                    _id: { $in: usersWithoutChat.map(id => mongoose.Types.ObjectId(id)) }
+                }
+            },
+            { $sample: { size: 10 } }, 
+            {
+                $project: {
+                    password: 0,
+                    email: 0,
+                    __v: 0
+                }
+            }
+        ]);
+        const finalSuggestedUsers = suggestedUsers.slice(0, 4);
+
+        return res.status(200).json({
+            message: "Suggested users for chat",
+            suggestedUsers: finalSuggestedUsers
+        });
+    } catch (error) {
+        console.error("Error in suggestedChat: ", error.message);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+};
+const searchUser = async (req, res) => {
+    try {
+        const searchText = req.params.query;
+        console.log(searchText);
+        const users = await User.find({
+            username: { $regex: searchText, $options: 'i' }
+        }).select('-password'); 
+
+        res.status(200).json({ users });
+    } catch (error) {
+        console.error("Error searching users:", error); 
+        res.status(500).json({ message: "An error occurred while searching for users." });
+    }
+};
+
 module.exports = {
     getUserProfile,
     followUnfollow,
     Suggestion,
     updateUser,
-    getChatList
+    getChatList,
+    suggestedChat,searchUser
 };

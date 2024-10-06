@@ -36,7 +36,11 @@ const postSchema = new mongoose.Schema(
         ref: "User",
       },
     ],
-    comments: [commentSchema], // Reference the comment schema
+    comments: [commentSchema],
+    type:{
+      type:String,
+      enum:['text','image']
+    } // Reference the comment schema
   },
   { timestamps: true } // Enable timestamps for the post schema
 );

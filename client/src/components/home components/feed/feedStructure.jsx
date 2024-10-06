@@ -49,7 +49,7 @@ const handleComment = async () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `${localStorage.getItem('token')}`, // Bearer may be needed, or leave just token if backend doesn't require it.
+        'Authorization': `${localStorage.getItem('token')}`, 
       },
       body: JSON.stringify({
         _id: user._id,
@@ -90,7 +90,6 @@ const handleComment = async () => {
 
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [isPopupOpen]);
-    console.log(post)
     return (
         <div className="flex p-4 flex-col gap-3 bg-custom_grey w-full rounded-xl">
             {/* Header part for profile pic, username, and time */}

@@ -1,4 +1,4 @@
-import {React, useContext}  from "react";
+import {React}  from "react";
 import Nav from "./nav";
 import Suggestion from "./suggestion";
 import SearchBar from "./searchbar";

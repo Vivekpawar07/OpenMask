@@ -74,7 +74,7 @@ export default function Feed() {
                 <p>Loading posts...</p>
             ) : posts.length > 0 ? (
                 posts.map((post, index) => (
-                    <Structure key={index} post={post} /> // Using post here
+                    <Structure key={index} post={post} /> 
                 ))
             ) : (
                 <p>No posts found</p>

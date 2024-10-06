@@ -9,9 +9,10 @@ const userRoutes = require('./routes/usersRoute.js');
 const cloudinary = require('cloudinary').v2;
 // const uploadMiddleware = require('./middlewares/multer.js');  
 const post = require('./routes/post.js');
-const app = express();
+// const app = express();
 const messages = require('./routes/messagesRoute.js');
 const Anonymous = require('./routes/AnonymousPost.js');
+const { app, server } = require ("./sockets/socket.js");
 
 
 // Middleware
@@ -42,7 +43,8 @@ app.use('/feed',post);
 app.use('/chat', messages);
 app.use('/anonymous',Anonymous);
 
-// Start server
-app.listen(PORT, () => {
+
+// server is listning through sockets
+server.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
 });

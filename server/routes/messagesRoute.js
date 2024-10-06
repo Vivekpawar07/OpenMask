@@ -4,7 +4,7 @@ const  protectRoute = require("../middlewares/procted.js");
 
 const router = express.Router();
 
-router.get("/:id", protectRoute, getMessages);
+router.post("/:id", protectRoute, getMessages);
 router.post("/send/:id", protectRoute, sendMessage);
 
 module.exports = router;

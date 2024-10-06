@@ -46,7 +46,7 @@ export default function Suggestion() {
         <div className="fixed h-[100%] flex flex-col gap-5 justify-self-end w-[15%] bg-custom_grey p-2">
             <div className="flex h-[60px] w-full items-center justify-evenly">
                 <SettingsIcon />
-                <Link to={`/profile/${user?.username}`}>
+                <Link to={`/profile/${user.username}`} state={{ userProfile: user }}>
                 <div className="flex items-center gap-2">
                     <p>{user?.username}</p>
                     <img 

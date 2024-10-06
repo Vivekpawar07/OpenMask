@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import Upload from '../components/home components/uploadPost';
 import Feed from '../components/home components/feed';
 import Event from '../components/home components/events';

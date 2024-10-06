@@ -11,6 +11,7 @@ import Messages from "./pages/message";
 import Notifications from "./pages/notification";
 import Profile from "./pages/profile";
 import NotFound from "./pages/404";
+import { ChatProvider } from "./context/Chat";
 function AppContent() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const location = useLocation();
@@ -46,8 +47,10 @@ function AppContent() {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <AppContent />
-    </BrowserRouter>
+    <ChatProvider>
+      <BrowserRouter>
+        <AppContent />
+      </BrowserRouter>
+    </ChatProvider>
   );
 }
