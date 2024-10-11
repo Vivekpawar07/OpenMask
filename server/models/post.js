@@ -13,7 +13,7 @@ const commentSchema = new mongoose.Schema(
       required: true,
     },
   },
-  { timestamps: true } // Enable timestamps for comments
+  { timestamps: true } 
 );
 
 // Post schema
@@ -40,9 +40,28 @@ const postSchema = new mongoose.Schema(
     type:{
       type:String,
       enum:['text','image']
-    } // Reference the comment schema
+    },
+    hashtags:[{
+      type:String
+    }],
+    report:[{
+      reportedBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',  // Reference to the user who submitted the report
+          required: true
+      },
+      reason: {
+          type: String,
+          enum: ['spam', 'abuse', 'religous hate', 'false speech', 'toxic','identity hate','viloence'],
+          default: 'other'
+      },
+      reportedAt: {
+          type: Date,
+          default: Date.now
+      }
+    }]
   },
-  { timestamps: true } // Enable timestamps for the post schema
+  { timestamps: true }
 );
 
 const Post = mongoose.model("Post", postSchema);

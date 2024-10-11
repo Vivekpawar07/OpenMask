@@ -1,5 +1,21 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
+const report =[{
+    reportedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',  // Reference to the user who submitted the report
+        required: true
+    },
+    reason: {
+        type: String,
+        enum: ['spam', 'abuse', 'fake account', 'other'],
+        default: 'other'
+    },
+    reportedAt: {
+        type: Date,
+        default: Date.now
+    }
+}]
 const userSchema = new Schema({
     username: {
         type: String,
@@ -19,7 +35,7 @@ const userSchema = new Schema({
     },
     fullName:{
         type:String,
-        require: true
+        maxlength:50,
     },
     dob: {
         type: Date,
@@ -45,6 +61,23 @@ const userSchema = new Schema({
         type: String,
         maxlength: 160, 
     },
+    gender: {
+        type: String, 
+        enum: ['male', 'female', 'others']
+    },
+    likes: {
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: 'Post'  
+    }, 
+    interests: [{
+        type: String,
+        enum: ['technology', 'sports', 'music', 'art', 'gaming', 'fitness', 'cooking', 'travel', 'science', 'education'] // example interests
+    }],
+    blocked:[{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'  
+    }],
+    reports: report
 }, { timestamps: true }); 
 
 const UserModel = mongoose.model('User', userSchema);

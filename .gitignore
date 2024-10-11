@@ -12,3 +12,6 @@ server/public/
 ML backend/models/
 ML backend/GRE.py
 ML backend/sentiment.py
+
+# ignore App.js in th Client
+client/src/App.js
