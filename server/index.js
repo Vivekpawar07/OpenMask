@@ -12,7 +12,9 @@ const post = require('./routes/post.js');
 // const app = express();
 const messages = require('./routes/messagesRoute.js');
 const Anonymous = require('./routes/AnonymousPost.js');
+const EventsAndTrends = require('./routes/EventsAndTrends.js');
 const { app, server } = require ("./sockets/socket.js");
+
 
 
 // Middleware
@@ -42,6 +44,7 @@ app.use('/user', userRoutes);
 app.use('/feed',post);
 app.use('/chat', messages);
 app.use('/anonymous',Anonymous);
+app.use('/api',EventsAndTrends);
 
 
 // server is listning through sockets

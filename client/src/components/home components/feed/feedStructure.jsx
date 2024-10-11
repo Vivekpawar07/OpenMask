@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useContext } from "react";
+import React, { useRef, useContext, useEffect,useState } from "react";
 import LongMenu from "../../../mui/more";
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import FavoriteIcon from '@mui/icons-material/Favorite';
@@ -8,72 +8,19 @@ import { AuthContext } from "../../../context/AuthContext";
 import Comments from "./commentStructure";
 import Send from "@mui/icons-material/Send";
 import { Button } from "@mui/material";
+import { Link } from "react-router-dom";
+import { useLikeUnlike } from '../../../hooks/LikeUnlike';
+import { useHandleComment } from '../../../hooks/commentHook';
 
 export default function Structure({ post }) {
     const { user } = useContext(AuthContext);
-    const [liked, setLiked] = useState(post.likes.includes(user._id));
-    const [comment, setComment] = useState(""); // Add comment state
+    const [liked, likeUnlike] = useLikeUnlike(post, user);
+    const [comment, setComment, handleComment] = useHandleComment(post, user);
     const [isPopupOpen, setIsPopupOpen] = useState(false);
     const popupRef = useRef(null);
 
-    const handleLikeClick = async () => {
-      try {
-          const response = await fetch(`${process.env.REACT_APP_BACKEND_SERVER_URL}/feed/like/${post._id}`, {
-              method: 'POST',
-              headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `${localStorage.getItem('token')}`,
-              },
-              body: JSON.stringify({ _id: user._id })  // Send the user's id in the request
-          });
-    
-          if (response.ok) {
-              // Toggle the liked state and update UI
-              setLiked(!liked);
-              console.log("Like status updated");
-          } else {
-              console.error("Failed to update like status");
-          }
-      } catch (error) {
-          console.error("Error liking/unliking post:", error);
-      }
-    };
-
     const openPopup = () => setIsPopupOpen(true);
     const closePopup = () => setIsPopupOpen(false);
-
-    
-const handleComment = async () => {
-  try {
-    const response = await fetch(`${process.env.REACT_APP_BACKEND_SERVER_URL}/feed/comment/${post._id}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `${localStorage.getItem('token')}`, 
-      },
-      body: JSON.stringify({
-        _id: user._id,
-        text: comment
-      }),
-    });
-
-    // Handle the response
-    const data = await response.json();
-    
-    if (!response.ok) {
-      // Handle any errors (e.g., show error message)
-      console.error('Error:', data.message);
-      return;
-    }
-    
-    // Success! Handle success response
-    console.log('Comment submitted successfully:', data);
-
-  } catch (error) {
-    // Handle network or other errors
-    console.error('An error occurred:', error);
-  }
-};
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -90,19 +37,21 @@ const handleComment = async () => {
 
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [isPopupOpen]);
+
     return (
         <div className="flex p-4 flex-col gap-3 bg-custom_grey w-full rounded-xl">
-            {/* Header part for profile pic, username, and time */}
             <div className="flex w-full justify-between">
-                <div className="flex flex-wrap gap-3">
-                    <img src={`${post.user.profilePic}`} alt="profile picture" className="rounded-full h-[45px] w-[45px]" />
-                    <div>
-                        <p className="text-sm font-bold">{post.user.username}</p>
-                        <p className="text-xs">
-                            {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
-                        </p>
+                <Link to={`/profile/${post.user.username}`} state={{ userProfile: post.user }}>
+                    <div className="flex flex-wrap gap-3">
+                        <img src={`${post.user.profilePic}`} alt="profile picture" className="rounded-full h-[45px] w-[45px]" />
+                        <div>
+                            <p className="text-sm font-bold">{post.user.username}</p>
+                            <p className="text-xs">
+                                {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
+                            </p>
+                        </div>
                     </div>
-                </div>
+                </Link>
                 <LongMenu />
             </div>
 
@@ -110,12 +59,11 @@ const handleComment = async () => {
                 <p className="text-xm">{post.text}</p>
             </div>
             <div className="max-h-[300px] overflow-hidden">
-                <img src={post.img} alt="" className="w-full h-full object-cover rounded-xl" />
+                <img src={post.img} alt="" className="w-full h-full object-contain rounded-xl" />
             </div>
 
-            {/* Post actions */}
             <div className="flex gap-3">
-                <div className="flex gap-1 flex-col" onClick={handleLikeClick} style={{ cursor: 'pointer' }}>
+                <div className="flex gap-1 flex-col" onClick={likeUnlike} style={{ cursor: 'pointer' }}>
                     {liked ? <FavoriteIcon /> : <FavoriteBorderIcon />}
                 </div>
                 <ChatBubbleOutlineIcon onClick={openPopup} />
@@ -125,7 +73,6 @@ const handleComment = async () => {
                 <p>{post.likes.length} likes</p>
             </div>
 
-            {/* Popup for comments */}
             {isPopupOpen && (
                 <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center z-50">
                     <div
@@ -141,7 +88,7 @@ const handleComment = async () => {
                         <div className="flex flex-col overflow-scroll gap-3">
                             <div className="flex flex-col overflow-scroll gap-3 h-[300px]">
                                 {post.comments.map((comment, index) => (
-                                    <Comments key={index} comments={comment} /> // Pass each comment to the Comments component
+                                    <Comments key={index} comments={comment} />
                                 ))}
                             </div>
                             <div className="flex">
@@ -152,7 +99,7 @@ const handleComment = async () => {
                                     }}>
                                     <input type="text" placeholder="comment"
                                         className="bg-transparent h-[30px] w-full border-none outline-none text-white"
-                                        onChange={(e) => { setComment(e.target.value) }} />
+                                        onChange={(e) => setComment(e.target.value)} />
                                     <Button variant="contained"
                                         style={{ float: 'left', borderRadius: '20px', backgroundColor: '#3a6f98', fontSize: '12px' }}
                                     >
@@ -178,4 +125,3 @@ const handleComment = async () => {
         </div>
     );
 }
-

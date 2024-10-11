@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import SettingsIcon from '@mui/icons-material/Settings';
 import { AuthContext } from '../../context/AuthContext';
 import GetSuggestion from './suggestedUser';
+
 export default function Suggestion() {
     const { user } = useContext(AuthContext); 
     const [suggestions, setSuggestions] = useState([]);
@@ -25,8 +26,6 @@ export default function Suggestion() {
                 }
 
                 const data = await response.json();
-                // console.log(data.suggestedUsers);
-
                 setSuggestions(Array.isArray(data.suggestedUsers) ? data.suggestedUsers : []);
             } catch (error) {
                 console.error('Error fetching suggestions:', error);
@@ -46,15 +45,15 @@ export default function Suggestion() {
         <div className="fixed h-[100%] flex flex-col gap-5 justify-self-end w-[15%] bg-custom_grey p-2">
             <div className="flex h-[60px] w-full items-center justify-evenly">
                 <SettingsIcon />
-                <Link to={`/profile/${user.username}`} state={{ userProfile: user }}>
-                <div className="flex items-center gap-2">
-                    <p>{user?.username}</p>
-                    <img 
-                        src={`${user?.profilePic}`} 
-                        alt="profile picture" 
-                        className="rounded-full h-[45px] w-[45px]" 
-                    />
-                </div>
+                <Link to={`/profile/${user.username}`} state={{userProfile:user}}>
+                    <div className="flex items-center gap-2">
+                        <p>{user?.username}</p>
+                        <img 
+                            src={`${user?.profilePic}`} 
+                            alt="profile picture" 
+                            className="rounded-full h-[45px] w-[45px]" 
+                        />
+                    </div>
                 </Link>
             </div>
             <div>
@@ -65,7 +64,7 @@ export default function Suggestion() {
                     <p>Loading suggestions...</p>
                 ) : suggestions.length > 0 ? (
                     suggestions.map((suggestedUser, index) => (
-                        <GetSuggestion key={index} suggestedUser={suggestedUser} />
+                            <GetSuggestion suggestedUser={suggestedUser} />
                     ))
                 ) : (
                     <p>No suggestions available</p> 

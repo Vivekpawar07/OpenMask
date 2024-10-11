@@ -5,6 +5,7 @@ import { ChatContext } from "../../context/Chat";
 import { AuthContext } from "../../context/AuthContext";
 import io from "socket.io-client";
 import DisplayChat from "./showChat";
+import { Link } from "react-router-dom";
 
 export default function Chat() {
     const { selectedChat } = useContext(ChatContext);
@@ -89,11 +90,13 @@ export default function Chat() {
             <div className="h-[85vh] w-[60%] bg-custom_grey rounded-2xl flex flex-col p-3 gap-3">
                 {/* this is the header */}
                 <div className="flex gap-2">
+                    <Link to={`/profile/${selectedChat.username}`} state ={{userProfile:selectedChat}}>
                     <img src={selectedChat.profilePic} alt="" className="rounded-full h-12 w-12" />
                     <div className="">
                         <p className="text-xs font-semibold">{selectedChat.username}</p>
                         <p className="text-xs "> full name</p>
                     </div>
+                    </Link>
                 </div>
                 <Divider sx={{ borderColor: 'white' }} />
                 {/* this is chat component */}

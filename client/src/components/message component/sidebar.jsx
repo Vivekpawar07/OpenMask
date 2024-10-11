@@ -4,41 +4,56 @@ import UserToChat from "./msgComp";
 import { AuthContext } from "../../context/AuthContext";
 import useDebouncedSearch from "../../hooks/searchHook";
 import Show from "../main component/showUser";
+import { formatDistanceToNow } from 'date-fns';
 export default function Sidebar(){
     const { user } = useContext(AuthContext);
     const [previousChats,setPreviousChats] = useState([]);
     const [suggestedChat,setSuggestedChat] = useState([]);
     const { search, setSearch, results, isLoading } = useDebouncedSearch('', 300); 
-    useEffect(()=>{
-        const getPreviousUser = async()=>{
-            const response = await fetch(`${process.env.REACT_APP_BACKEND_SERVER_URL}/user/chat/${user._id}`,{
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': localStorage.getItem('token'),
+    useEffect(() => {
+        const getPreviousUser = async () => {
+            try {
+                const response = await fetch(`${process.env.REACT_APP_BACKEND_SERVER_URL}/user/chat/${user._id}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': localStorage.getItem('token'),
+                    }
+                });
+                if (!response.ok) {
+                    throw new Error('Failed to fetch previous chats');
                 }
-            })
-            if(!response.ok){
-                throw new Error('Failed to fetch previous chats');
-            }else{
-            const data = await response.json()
-            setPreviousChats(data);
+                const data = await response.json();
+                console.log(data)
+                setPreviousChats(data); 
+            } catch (error) {
+                console.error(error.message);
             }
-        }
-        const getSuggestedChat = async()=>{
-            const response = await fetch(`${process.env.REACT_APP_BACKEND_SERVER_URL}/user/suggestChat/${user._id}`,{
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': localStorage.getItem('token'),
+        };
+    
+        const getSuggestedChat = async () => {
+            try {
+                const response = await fetch(`${process.env.REACT_APP_BACKEND_SERVER_URL}/user/suggestChat/${user._id}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': localStorage.getItem('token'),
+                    }
+                });
+                const data = await response.json(); 
+                if (Array.isArray(data.suggestedUsers)) {
+                    setSuggestedChat(data.suggestedUsers); 
+                } else {
+                    setSuggestedChat([]); 
                 }
-            })
-            const data = await response.json()
-            
-        }
+            } catch (error) {
+                console.error('Error fetching suggested chat:', error.message);
+            }
+        };
+    
         getPreviousUser();
-        // getSuggestedChat();
-    },[])
+        getSuggestedChat();
+    }, [user._id]);
     const clearSearch = () => {
         setSearch('');
     };
@@ -84,11 +99,16 @@ export default function Sidebar(){
             <div>
                 suggested user
             </div>
-            <div className="ml-2 text-xs font-semibold">
-            {previousChats.map((chat,index)=>(
-                   <UserToChat key={index} chat={chat}/>
-               ))}
+            <div className="ml-2 text-xs font-semibold flex flex-col gap-3">
+                {suggestedChat.length > 0 ? (
+                    suggestedChat.map((chat, index) => (
+                        <UserToChat key={index} chat={chat} onUserSelect={clearSearch} />
+                    ))
+                ) : (
+                    <p>No suggested chats available</p>
+                )}
             </div>
+    
         </div>
         </>
     )

@@ -1,94 +1,149 @@
-import React, { useContext,useState,useEffect } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { useLocation } from "react-router-dom";
 import { AuthContext } from '../context/AuthContext';
 import Button from '@mui/material/Button';
-export default function Profile(){
+import ProfilePost from '../components/profileComp/ProfileComp';
+import MoreHorizIcon from '@mui/icons-material/MoreHoriz'; 
+import { useFollowToggle } from '../hooks/followUnfollowHook';
+import FollowersFollowingModal from '../components/profileComp/FollowListComp';
+import { useFollowingData, useFollowersData } from '../hooks/getFollowerFollowingHook';
+import EditProfileModal from '../components/profileComp/editProfileComp'; // Import the modal
+
+export default function Profile() {
+    const [selectedPost, setSelectedPost] = useState(null); 
     const location = useLocation();
-    const { userProfile } = location.state || {}; // Extract user data from the state
-    const {user} = useContext(AuthContext)
-    const [userPosts,setUserPost] = useState([])
-    console.log(userProfile)
+    const { userProfile } = location.state || {};
+    const { user } = useContext(AuthContext);
+    const [userPosts, setUserPosts] = useState([]);
+    const { isFollowing, toggleFollowStatus } = useFollowToggle(userProfile._id, user._id);
+    const [modalOpen, setModalOpen] = useState(false);
+    const [modalTitle, setModalTitle] = useState('');
+    const [modalData, setModalData] = useState([]);
+    const [editModalOpen, setEditModalOpen] = useState(false); // State for Edit Profile Modal
+    const { following } = useFollowingData(userProfile.following);
+    const { followers } = useFollowersData(userProfile.followers);
+
     useEffect(() => {
-        const getPosts = async()=>{
-            const response = await fetch(`${process.env.REACT_APP_BACKEND_SERVER_URL}/feed/user/${userProfile.username}`,{
+        const getPosts = async () => {
+            const response = await fetch(`${process.env.REACT_APP_BACKEND_SERVER_URL}/feed/user/${userProfile.username}`, {
                 method: 'GET',
-                headers:{'Content-Type': 'application/json',
+                headers: {
+                    'Content-Type': 'application/json',
                     'Authorization': `${localStorage.getItem('token')}`
                 }
-            })
-            const data = await response.json()
-            console.log(data)
-            if(response.ok){
-                setUserPost(data);
+            });
+            const data = await response.json();
+            if (response.ok) {
+                setUserPosts(data);
+            } else {
+                throw new Error("Unable to fetch user posts");
             }
-            else{
-                throw new Error("unable to fetch user post")
-                console.error('Error:', data.message);
-                // Handle the error (e.g., show error message)
-                // setUserPosts([]); // Reset the posts array to an empty array in case of error.
-            }
-            
+        };
+
+        if (userProfile?.username) {
+            getPosts();
         }
-        getPosts();
-        
-    },[])
+    }, [userProfile?.username]);
+
+    const openModal = (type) => {
+        setModalTitle(type);
+        setModalData(type === 'Followers' ? userProfile.followers : userProfile.following);
+        setModalOpen(true); 
+    };
+    
+    const closeModal = () => {
+        setModalOpen(false); 
+    };
+
+    const openEditModal = () => {
+        setEditModalOpen(true);
+    };
+
+    const closeEditModal = () => {
+        setEditModalOpen(false);
+    };
 
     if (!userProfile) {
         return <div>User data is not available.</div>;
     }
 
-    // Render the user profile data here...
-    return(
-        <>
+    return (
         <div className='flex justify-center gap-6 w-[70%] h-[100vh] mt-[80px] ml-[16%] mr-[15%]'>
             <div className="flex flex-col h-[85%] w-[80%] bg-custom_grey rounded-2xl p-5">
-                {/* div to display Profile of the user */}
                 <div className='flex gap-8 '>
-                    <div className=' rounded-full overflow-hidden'>
-                        <img src={userProfile.profilePic} alt={`${userProfile.username} profile`} className='contain h-32 w-32'/>
+                    <div className='rounded-full overflow-hidden'>
+                        <img src={userProfile.profilePic || '/default-profile-pic.jpg'} alt={`${userProfile.username} profile`} className='contain h-32 w-32' />
                     </div>
                     <div className='flex'>
-                    <div className='flex flex-col gap-2'>
-                        <div>
-                            <h1>{userProfile.username}</h1>
-                            <p>{userProfile.name || 'full name'}</p>
-                        </div>
-                        <p>{userProfile.bio || 'bio'}</p>
-                    </div>
-                        <div className='flex'>
-                            <div className="stat">
-                                <div className="stat-value">{userProfile.followers.length}</div>
-                                <div className="stat-title ">Followers</div>
+                        <div className='flex flex-col gap-2'>
+                            <div className='flex items-center gap-5'>
+                                <h1>{userProfile.username}</h1>
+                                <div>
+                                {userProfile._id !== user._id ? (
+                                    <div>
+                                        <Button
+                                            className="text-xs"
+                                            onClick={toggleFollowStatus} 
+                                        >
+                                            {isFollowing ? 'Unfollow' : 'Follow'}
+                                        </Button>
+                                        <Button>Message</Button>
+                                    </div>
+                                ) : (
+                                    <Button onClick={openEditModal}>Edit Profile</Button>
+                                )}
+                                </div>
+                                {userProfile._id !== user._id ? (<MoreHorizIcon />):null}
                             </div>
-                            <div className="stat">
-                                <div className="stat-value">{userProfile.following.length}</div>
-                                <div className="stat-title">following</div>
+                            <div className='flex gap-2'>
+                            <div className="flex gap-1 cursor-pointer" onClick={() => openModal('Followers')}>
+                                <div>{userProfile?.followers?.length || 0}</div>
+                                <div>Followers</div>
                             </div>
+                            <div className="flex gap-1 cursor-pointer" onClick={() => openModal('Following')}>
+                                <div>{userProfile?.following?.length || 0}</div>
+                                <div>Following</div>
+                            </div>
+                            </div>
+                            <p>{userProfile.fullName || 'No full name'}</p>
+                            <p>{userProfile.bio || 'No bio available'}</p>
                         </div>
-                    </div>
-                    <div className='flex'>
-                        <Button>Follow</Button>
-                        <Button>Message</Button>
                     </div>
                 </div>
 
-                <div className="divider  border-custom_blue">Post</div>
-                {/* post section */}
-                <div className='w-full h-full overflow-scroll '>
-                    <div className='flex'>
-                    { userPosts.length > 0 && (userPosts.map((post) => (
-                            <div className='w-80 h-80'>
-                                <img src={post.img} alt={`${userProfile.username} profile pic`} className=''/>
-                            </div>
-                    )))}
-                    {
-                        userPosts.length === 0 && <div>No Posts Found</div>  // Display a message when there are no posts.  // Add loading spinner or error handling here.  // userPosts.length === 0 && <LoadingSpinner />  // userPosts.length === 0 && <ErrorMessage message="Unable to fetch user posts" />  // userPosts.length === 0 && <div>User has no posts yet</div>  // userPosts.length === 0 && <div>User has no posts yet</div>  // userPosts.length === 0 && <div>User has no posts yet</div>  // userPosts.length === 0 && <div>User has no posts yet</div>  // userPosts.length === 0 && <div>User has no posts yet</div>  // userPosts.length === 0 && <div>User has no posts yet</div>
-                    }
+                <div className="divider border-custom_blue">Posts</div>
+
+                {selectedPost ? (
+                    <ProfilePost post={selectedPost} closeModal={closeModal} currentProfile={userProfile} />
+                ) : (
+                    <div className='w-full h-full overflow-scroll'>
+                        <div className='grid grid-cols-3 gap-0'>
+                            {userPosts.length > 0 ? (
+                                userPosts.map((post) => (
+                                    <div key={post._id} className='w-80 h-80' onClick={() => setSelectedPost(post)}>
+                                        <img src={post.img} alt={`${userProfile.username} post`} className='h-[200px] w-[200px] object-cover' />
+                                    </div>
+                                ))
+                            ) : (
+                                <div>No Posts Found</div>
+                            )}
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
+
+            <FollowersFollowingModal
+                open={modalOpen}
+                onClose={closeModal}
+                title={modalTitle}
+                users={modalData}
+            />
+
+            <EditProfileModal 
+                open={editModalOpen}
+                onClose={closeEditModal}
+                userProfile={userProfile}
+            /> {/* Include the Edit Profile Modal */}
         </div>
-        
-        </>
-    )
+    ); 
 }
