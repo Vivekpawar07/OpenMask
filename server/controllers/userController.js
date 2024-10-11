@@ -97,9 +97,10 @@ const Suggestion = async (req, res) => {
     }
 }
 const updateUser = async (req, res) => {
-    const { fullName, username, currentPassword, newPassword, bio} = req.body;
+    const { fullName, username, currentPassword, newPassword, bio,gender} = req.body;
     let profilePic = req.file ? req.file.path : null; 
     const userId = req.body._id;
+    console.log(req.body)
     try {
         let user = await User.findById(userId);
         if (!user) return res.status(404).json({ message: "User not found" });
@@ -126,7 +127,6 @@ const updateUser = async (req, res) => {
         if (username) user.username = username; 
         if (fullName) user.fullName = fullName; 
         if (bio) user.bio = bio;
-        if (dob) user.dob = dob;
         if (gender) user.gender = gender;
 
         user = await user.save();

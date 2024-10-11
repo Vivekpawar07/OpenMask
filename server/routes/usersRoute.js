@@ -7,7 +7,7 @@ const router = express.Router();
 router.get('/profile/:username', procted, getUserProfile);
 router.post('/follow/:id', procted , followUnfollow);
 router.post('/getSuggestion', procted, Suggestion);
-router.post('/update',uplaodMideleware,procted,updateUser);
+router.put('/update',uplaodMideleware,procted,updateUser);
 router.get('/chat/:id',procted, getChatList);
 router.get('/suggestChat/:id',procted, suggestedChat);
 router.get('/search/:query',procted, searchUser);

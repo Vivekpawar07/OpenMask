@@ -6,6 +6,6 @@ mongoose.connect(mongo_url)
     console.log('Mongoose is connected to mongodb')
 ).catch((err)=>{
 
-    console.log("Erroe connection mongo database:", err)
+    console.log("Erro rconnection mongo database:", err)
 }
 )

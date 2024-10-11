@@ -77,7 +77,8 @@ const userSchema = new Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'  
     }],
-    reports: report
+    reports: report,
+    isVerified: {type:Boolean,default: false}
 }, { timestamps: true }); 
 
 const UserModel = mongoose.model('User', userSchema);
