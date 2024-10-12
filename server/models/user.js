@@ -3,7 +3,7 @@ const Schema = mongoose.Schema;
 const report =[{
     reportedBy: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',  // Reference to the user who submitted the report
+        ref: 'User',  
         required: true
     },
     reason: {
@@ -78,7 +78,10 @@ const userSchema = new Schema({
         ref: 'User'  
     }],
     reports: report,
-    isVerified: {type:Boolean,default: false}
+    isVerified: {type:Boolean,default: false},
+    imgEmbedding:{
+        type: [Number] 
+    }
 }, { timestamps: true }); 
 
 const UserModel = mongoose.model('User', userSchema);

@@ -4,16 +4,25 @@ from flask import Flask, request, jsonify
 import torch
 from transformers import T5Tokenizer, T5ForConditionalGeneration
 from textblob import TextBlob
-
+import os
+from sentence_transformers import SentenceTransformer
+from PIL import Image
+import io
+import numpy as np
+UPLOAD_FOLDER = './images'
+ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg'])
+model = SentenceTransformer('clip-ViT-L-14')
 app = Flask(__name__)
-
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 grammar_model_name = 'models/GRE MODEL/fine_tuned_t5_grammar'
 tokenizer = T5Tokenizer.from_pretrained(grammar_model_name)
 grammar_model = T5ForConditionalGeneration.from_pretrained(grammar_model_name)
 
-
 class_names = ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate']
-
+def resize_image(file_path, size=(224, 224)):
+    img = Image.open(file_path)
+    img = img.resize(size)
+    img.save(file_path)
 # Load vectorizers
 with open('models/Sentiment Model/models/word_vectorizer.pkl', 'rb') as f:
     word_vectorizer = pickle.load(f)
@@ -21,12 +30,12 @@ with open('models/Sentiment Model/models/word_vectorizer.pkl', 'rb') as f:
 with open('models/Sentiment Model/models/char_vectorizer.pkl', 'rb') as f:
     char_vectorizer = pickle.load(f)
 
-
 classifiers = {}
 for class_name in class_names:
     classifier_file = f'models/Sentiment Model/models/classifier_{class_name}.pkl'
     with open(classifier_file, 'rb') as f:
         classifiers[class_name] = pickle.load(f)
+
 
 def predict_toxicity(user_input):
     THRESHOLD = 0.75
@@ -44,34 +53,57 @@ def predict_toxicity(user_input):
 
     return predictions, probs
 
+
 @app.route('/predict_toxicity', methods=['POST'])
 def predict_toxicity_api():
-
     data = request.json
     user_input = data.get('input', '')
+    predictions, probs = predict_toxicity(user_input)
+    return jsonify(predictions, probs)
 
-
-    predictions,probs = predict_toxicity(user_input)
-
-    return jsonify(predictions,probs)
 
 @app.route('/correct_grammar', methods=['POST'])
 def correct_grammar_api():
     data = request.json
     custom_input = data.get('input', [])
-
     corrected_input = str(TextBlob(custom_input).correct())
-
-    inputs_tokenized = tokenizer(corrected_input, return_tensors="pt", padding="max_length", max_length=64, truncation=True)
+    inputs_tokenized = tokenizer(corrected_input, return_tensors="pt", padding="max_length", max_length=64,
+                                 truncation=True)
 
     grammar_model.eval()
     with torch.no_grad():
         generated_ids = grammar_model.generate(inputs_tokenized["input_ids"], max_length=64)
 
     predictions = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
-
     return jsonify(predictions)
 
+
+@app.route('/get_embeddings', methods=['GET','POST'])
+def get_embeddings():
+    if request.method == 'POST':
+        if 'image' not in request.files:
+            return jsonify({'error': 'No image file provided'}), 400
+
+        file = request.files['image']
+
+        if file.filename == '':
+            return jsonify({'error': 'No selected file'}), 400
+
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+        file.save(file_path)
+        resize_image(file_path)
+
+        try:
+            # Generate embeddings
+            embeddings = model.encode(file_path, convert_to_tensor=True)
+
+            os.remove(file_path)
+
+            return jsonify({'embeddings': embeddings.tolist()})
+
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
+    return jsonify({'error': 'Invalid request method'}), 405  # Handle non-POST requests
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=3002)
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=3002, debug=True)

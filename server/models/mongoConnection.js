@@ -1,11 +1,12 @@
-require('dotenv').config(); 
+require('dotenv').config(); // Load environment variables from .env file
 const mongoose = require('mongoose');
-const mongo_url = process.env.MONGO_URL
-mongoose.connect(mongo_url)
-.then(
-    console.log('Mongoose is connected to mongodb')
-).catch((err)=>{
 
-    console.log("Erro rconnection mongo database:", err)
-}
-)
+const mongo_url = process.env.MONGO_URL;
+
+mongoose.connect(mongo_url)
+.then(() => {
+    console.log('Mongoose is connected to MongoDB');
+})
+.catch(err => {
+    console.error('Error connecting to MongoDB database:', err);
+});

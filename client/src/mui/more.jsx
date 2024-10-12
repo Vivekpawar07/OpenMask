@@ -3,22 +3,46 @@ import IconButton from '@mui/material/IconButton';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+import { Report, BlockUser } from '../hooks/reportHook'; // Assuming you have report and block hooks
 
-const options = [
-  "Report",
-  "Block user"
-];
+const mainOptions = ["Report", "Block user"];
+const reportOptions = ['Spam', 'Abuse', 'Fake account', 'Other'];
 
 const ITEM_HEIGHT = 48;
 
-export default function LongMenu() {
+export default function LongMenu({currentUserId,userToaction}) {
   const [anchorEl, setAnchorEl] = React.useState(null);
+  const [currentOptions, setCurrentOptions] = React.useState(mainOptions);
+  const [isReporting, setIsReporting] = React.useState(false); 
   const open = Boolean(anchorEl);
+
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget);
   };
+
   const handleClose = () => {
     setAnchorEl(null);
+  };
+
+  const handleOptionClick = (option) => {
+    if (option === "Block user") {
+      // Call block user hook or function
+      BlockUser(currentUserId,userToaction);
+      handleClose();
+    } else if (option === "Report") {
+      // If "Report" is selected, switch to report options
+      setIsReporting(true);
+      setCurrentOptions(reportOptions);
+    } else if (isReporting) {
+      // If it's one of the report options, call the report function
+      Report(currentUserId,userToaction,option); // Send selected report category to backend
+      handleClose();
+      // Reset to main options after reporting
+      setTimeout(() => {
+        setIsReporting(false);
+        setCurrentOptions(mainOptions);
+      }, 300);
+    }
   };
 
   return (
@@ -31,7 +55,7 @@ export default function LongMenu() {
         aria-haspopup="true"
         onClick={handleClick}
       >
-        <MoreVertIcon className='text-white'/>
+        <MoreVertIcon className='text-white' />
       </IconButton>
       <Menu
         id="long-menu"
@@ -58,9 +82,12 @@ export default function LongMenu() {
           },
         }}
       >
-        {options.map((option) => (
-          <MenuItem key={option} onClick={handleClose} 
-          sx={{bgcolor:"#2c2c2c",color:"white"}}>
+        {currentOptions.map((option) => (
+          <MenuItem 
+            key={option} 
+            onClick={() => handleOptionClick(option)} 
+            sx={{ bgcolor: "#2c2c2c", color: "white" }}
+          >
             {option}
           </MenuItem>
         ))}

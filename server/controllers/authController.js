@@ -5,6 +5,8 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 const cloudinary = require('cloudinary').v2;
+const FormData = require('form-data'); 
+const fs = require('fs'); 
 
 const googleLogin = async (req, res) => {
     try {
@@ -26,48 +28,65 @@ const signup = async (req, res) => {
     try {
         const { username, email, password, fullName, dob } = req.body;
         let profilePicUrl = null;
+        let embedding = null; 
         
         if (req.file) {
             try {
-                if (req.file) {
-                    const cloudinaryUpload = await cloudinary.uploader.upload(req.file.path, {
-                        folder: "user_profiles", 
-                    });
-                    profilePicUrl = cloudinaryUpload.secure_url; 
-                }
+                // Upload profile picture to Cloudinary
+                const cloudinaryUpload = await cloudinary.uploader.upload(req.file.path, {
+                    folder: "user_profiles", 
+                });
+                profilePicUrl = cloudinaryUpload.secure_url;
+
+                // Prepare the image for the ML backend by reading it from the filesystem
+                const formData = new FormData();
+                formData.append('image', fs.createReadStream(req.file.path));  // Create a readable stream for the image file
+
+                // Send the image file to the ML backend server for generating embeddings
+                const embeddingResponse = await axios.post(`${process.env.ML_BACKEND_SERVER}/get_embeddings`, formData, {
+                    headers: {
+                        ...formData.getHeaders() 
+                    },
+                });
+                embedding = embeddingResponse.data.embeddings;
             } catch (err) {
-                console.error(err);
-                res.status(500).json({ message: "Error uploading profile picture", success: false });
+                console.error("Error uploading profile picture or generating embeddings", err);
+                res.status(500).json({ message: "Error processing profile picture or embeddings", success: false });
                 return;
             }
-    
         }
 
+        // Hash the password before saving the user
         const hashedPassword = await bcrypt.hash(password, 10);
 
+        // Create a new user object with the profile picture and image embedding
         const newUser = new UserModel({
             username,
             email,
             password: hashedPassword,
             fullName,
             dob,
-            profilePic: profilePicUrl
+            profilePic: profilePicUrl,
+            imgEmbedding: embedding // Save the embedding in the database
         });
 
+        // Save the new user to the database
         await newUser.save();
 
+        // Generate a JWT token for the user
         const jwtToken = jwt.sign({ email: newUser.email }, process.env.JWT_SECRET, { expiresIn: '24h' });
         const userResponse = newUser.toObject();
-        delete userResponse.password; 
+        delete userResponse.password; // Remove password from the response
 
+        // Send the response with the JWT token and user data
         res.status(201).json({
             message: "Signup successful",
             success: true,
             token: jwtToken,
-            user:userResponse
+            user: userResponse
         });
     } catch (err) {
-        console.error(err);
+        console.error("Error during signup", err);
         res.status(500).json({ message: "Problem creating new user", success: false });
     }
 };

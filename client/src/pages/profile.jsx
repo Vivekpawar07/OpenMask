@@ -3,12 +3,10 @@ import { useLocation } from "react-router-dom";
 import { AuthContext } from '../context/AuthContext';
 import Button from '@mui/material/Button';
 import ProfilePost from '../components/profileComp/ProfileComp';
-import MoreHorizIcon from '@mui/icons-material/MoreHoriz'; 
 import { useFollowToggle } from '../hooks/followUnfollowHook';
 import FollowersFollowingModal from '../components/profileComp/FollowListComp';
-import { useFollowingData, useFollowersData } from '../hooks/getFollowerFollowingHook';
-import EditProfileModal from '../components/profileComp/editProfileComp'; // Import the modal
-
+import EditProfileModal from '../components/profileComp/editProfileComp'; 
+import LongMenu from '../mui/more';
 export default function Profile() {
     const [selectedPost, setSelectedPost] = useState(null); 
     const location = useLocation();
@@ -19,10 +17,10 @@ export default function Profile() {
     const [modalOpen, setModalOpen] = useState(false);
     const [modalTitle, setModalTitle] = useState('');
     const [modalData, setModalData] = useState([]);
-    const [editModalOpen, setEditModalOpen] = useState(false); // State for Edit Profile Modal
-    const { following } = useFollowingData(userProfile.following);
-    const { followers } = useFollowersData(userProfile.followers);
-
+    const [editModalOpen, setEditModalOpen] = useState(false); 
+    const [followers, setFollowers] = useState([]);
+    const [following, setFollowing] = useState([]);
+    
     useEffect(() => {
         const getPosts = async () => {
             const response = await fetch(`${process.env.REACT_APP_BACKEND_SERVER_URL}/feed/user/${userProfile.username}`, {
@@ -39,15 +37,33 @@ export default function Profile() {
                 throw new Error("Unable to fetch user posts");
             }
         };
+        const getFollowesFollowing = async () => {
+            const response = await fetch(`${process.env.REACT_APP_BACKEND_SERVER_URL}/user/search/followers/${userProfile._id}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `${localStorage.getItem('token')}`
+                }
+            });
+            const data = await response.json();
+            console.log(data)
+            if (response.ok) {
+                setFollowers(data.followers);
+                setFollowing(data.following);
+            } else {
+                throw new Error("Unable to fetch followers and following");
+            }
+        }
 
         if (userProfile?.username) {
             getPosts();
+            getFollowesFollowing();
         }
     }, [userProfile?.username]);
 
     const openModal = (type) => {
         setModalTitle(type);
-        setModalData(type === 'Followers' ? userProfile.followers : userProfile.following);
+        setModalData(type === 'Followers' ? followers : following);
         setModalOpen(true); 
     };
     
@@ -93,7 +109,7 @@ export default function Profile() {
                                     <Button onClick={openEditModal}>Edit Profile</Button>
                                 )}
                                 </div>
-                                {userProfile._id !== user._id ? (<MoreHorizIcon />):null}
+                                {userProfile._id !== user._id ? (<LongMenu currentUserId={user._id} userToaction={userProfile._id}/>):null}
                             </div>
                             <div className='flex gap-2'>
                             <div className="flex gap-1 cursor-pointer" onClick={() => openModal('Followers')}>

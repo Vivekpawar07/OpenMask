@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState,useContext } from 'react';
 import Modal from '@mui/material/Modal';
 import CloseIcon from '@mui/icons-material/Close';
 import { TextField, Button, IconButton, InputAdornment, FormControl, InputLabel, OutlinedInput } from "@mui/material";
@@ -9,11 +9,13 @@ import MultipleSelectChip from '../../mui/Multichip'
 import Box from '@mui/material/Box';
 import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
+import { AuthContext } from '../../context/AuthContext';
 const EditProfileModal = ({ open, onClose, userProfile }) => {
+    const { setUser } = useContext(AuthContext);
     const [formData, setFormData] = useState({
         fullName: userProfile.fullName || '',
         bio: userProfile.bio || '',
-        profilePic: userProfile.profilePic || '',
+        profilePicture: userProfile.profilePic || '',
         username: userProfile.username || '',
         gender: userProfile.gender || '',
         email: userProfile.email || '',
@@ -21,7 +23,7 @@ const EditProfileModal = ({ open, onClose, userProfile }) => {
         confirmPassword: "",
         interests: userProfile.interests || "",
         isVerified: userProfile.isVerified || false,
-        _id:userProfile._id
+        _id: userProfile._id
     });
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -42,7 +44,7 @@ const EditProfileModal = ({ open, onClose, userProfile }) => {
         if (file) {
             const reader = new FileReader();
             reader.onloadend = () => {
-                setFormData({ ...formData, profilePic: reader.result });
+                setFormData({ ...formData, profilePicture: reader.result });
             };
             reader.readAsDataURL(file);
         }
@@ -50,7 +52,6 @@ const EditProfileModal = ({ open, onClose, userProfile }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        // Add your logic to update the user profile
         try {
             const response = await fetch(`${process.env.REACT_APP_BACKEND_SERVER_URL}/user/update`, {
                 method: 'PUT',
@@ -61,12 +62,11 @@ const EditProfileModal = ({ open, onClose, userProfile }) => {
                 body: JSON.stringify(formData)
             });
             const data = await response.json();
-            console.log(data);
             if (!response.ok) {
                 throw new Error('Failed to update profile');
             }
+            setUser(data);
 
-            // Optionally refresh the user data or close the modal
             onClose();
         } catch (error) {
             console.error(error);
@@ -248,7 +248,7 @@ const EditProfileModal = ({ open, onClose, userProfile }) => {
                         </div>
 
                         <div className="flex flex-col items-center gap-3 mt-4 mb-5">
-                            <img src={formData.profilePic} alt="" className='contain h-32 w-32 rounded-full' />
+                            <img src={formData.profilePicture} alt="" className='contain h-32 w-32 rounded-full' />
                             <Button variant="contained" component="label">
                                 Change Profile Picture
                                 <input

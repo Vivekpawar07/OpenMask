@@ -1,9 +1,23 @@
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 import { Button } from "@mui/material";
 import { AuthContext } from '../../context/AuthContext';
 import Show from "./showUser";
 import useDebouncedSearch from '../../hooks/searchHook'; // Import the custom hook
+import { styled } from '@mui/material/styles';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+
+const VisuallyHiddenInput = styled('input')({
+  clip: 'rect(0 0 0 0)',
+  clipPath: 'inset(50%)',
+  height: 1,
+  overflow: 'hidden',
+  position: 'absolute',
+  bottom: 0,
+  left: 0,
+  whiteSpace: 'nowrap',
+  width: 1,
+});
 
 export default function SearchBar() {
     const { user } = useContext(AuthContext);
@@ -16,7 +30,42 @@ export default function SearchBar() {
     const handleSearch = (e) => {
         setSearch(e.target.value);
     };
+    
+    const [uploadedImage, setUploadedImage] = useState(null);
+    const [imageFile, setImageFile] = useState(null);
+    
+    const handleImageSearch = async() => {
+        const formData = new FormData(); 
+        if (imageFile) {
+            formData.append("profilePicture", imageFile); 
+            try {
+                const response = await fetch(`${process.env.REACT_APP_BACKEND_SERVER_URL}/user/imageSearch`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `${localStorage.getItem('token')}`,
+                    },
+                    body: formData,
+                });
+                const result = await response.json();
+                console.log(result);
+            } catch (error) {
+                console.error('Error during image search:', error);
+            }
+        }
+    };
 
+    const handleImageUpload = (event) => {
+        const file = event.target.files[0];
+        console.log(file)
+        if (file) {
+            const imageUrl = URL.createObjectURL(file);
+            setUploadedImage(imageUrl); 
+            setImageFile(file);
+            console.log(imageFile)
+            handleImageSearch(); 
+        }
+    };
+    
     return (
         <>
             <div className="fixed flex items-center gap-5 bg-custom_grey text-black ml-[15%] w-[70%] h-[60px] overflow-hidden">
@@ -31,13 +80,22 @@ export default function SearchBar() {
                         placeholder="Search..."
                         className="bg-transparent h-[30px] w-full border-none outline-none text-white"
                         onChange={handleSearch}
-                        value={search} // Keep input value controlled
+                        value={search} 
                     />
                 </div>
                 <Button
+                    component="label"
                     variant="contained"
-                    style={{ float: 'left', width: '180px', borderRadius: '20px', backgroundColor: '#3a6f98', fontSize: '12px' }}>
-                    Search with image
+                    startIcon={<CloudUploadIcon />}
+                    style={{ float: 'left', width: '180px', borderRadius: '20px', backgroundColor: '#3a6f98', fontSize: '12px' }}
+                >
+                    Search with Image
+                    <VisuallyHiddenInput
+                        type="file"
+                        accept="image/*" 
+                        onChange={handleImageUpload}
+                        multiple={false}
+                    />
                 </Button>
             </div>
 

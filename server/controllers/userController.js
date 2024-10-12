@@ -3,6 +3,9 @@ const Notification = require('../models/notification');
 const Message = require('../models/message');
 const mongoose = require('mongoose');
 const cloudinary = require('cloudinary').v2;
+const axios = require('axios');
+const FormData = require('form-data'); 
+const fs = require('fs'); 
 
 const getUserProfile = async (req, res) => {
     const { username } = req.params;
@@ -100,7 +103,7 @@ const updateUser = async (req, res) => {
     const { fullName, username, currentPassword, newPassword, bio,gender} = req.body;
     let profilePic = req.file ? req.file.path : null; 
     const userId = req.body._id;
-    console.log(req.body)
+    console.log(req.file)
     try {
         let user = await User.findById(userId);
         if (!user) return res.status(404).json({ message: "User not found" });
@@ -255,28 +258,125 @@ const searchUser = async (req, res) => {
         res.status(500).json({ message: "An error occurred while searching for users." });
     }
 };
-const getUserById = async (req, res) => {
+const getFollowersFollowings = async (req, res) => {
+    const userId = req.params.id;
     try {
-        const ids = req.body._ids;  
+        const userProfile = await User.findById(userId).select('followers following');
 
-        const objectIds = ids.map(id => mongoose.Types.ObjectId(id));
+        if (!userProfile) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        const populatedUserProfile = await userProfile.populate([
+            { path: 'followers', select: 'username fullName profilePic _id followers following posts bio' },
+            { path: 'following', select: 'username fullName profilePic _id followers following posts bio' }
+        ]);
 
-        const users = await User.find({
-            _id: { $in: objectIds }
-        }).select('-password');  
-
-        res.status(200).json({ users });
+        return res.status(200).json(populatedUserProfile);
     } catch (error) {
-        console.error("Error fetching users by IDs:", error);
-        res.status(500).json({ message: "An error occurred while searching for users." });
+        return res.status(500).json({ message: "Server error", error });
     }
 };
+const reportUser = async (req, res) => {
+    const { userId, reportedUserId, reason } = req.body;
+    console.log(req.body)
+    try {
+      const user = await User.findByIdAndUpdate(
+        reportedUserId,
+        {
+          $push: { reports: { reportedBy: userId, reason: reason } } 
+        },
+        { new: true } 
+      );
+  
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+  
+      return res.status(200).json({ message: "User reported successfully", user });
+    } catch (error) {
+      return res.status(500).json({ message: "Error reporting user", error });
+    }
+  };
+const blockUser = async(req,res)=>{
+    const {userId, blockedUserId } = req.body;
+    console.log(req.body)
+    try {
+      const user = await User.findByIdAndUpdate(
+        userId,
+        {
+          $push: { blockedUsers: blockedUserId } 
+        },
+        { new: true }
+      );
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      return res.status(200).json({ message: "User blocked successfully", user });
 
+    } catch (error) {
+        return res.status(500).json({ message: "Error blocking user", error });
+    }
+}
+const searchWithImage = async (req, res) => {
+    const imagePath = req.file.path; // Get the path of the uploaded image
+    let embedding;
+    console.log(req.file)
+    try {
+        // Prepare the image for the ML backend by reading it from the filesystem
+        const formData = new FormData();
+        formData.append('image', fs.createReadStream(imagePath));
+
+        // Send the image file to the ML backend server for generating embeddings
+        const embeddingResponse = await axios.post(`${process.env.ML_BACKEND_SERVER}/get_embeddings`, formData, {
+            headers: {
+                ...formData.getHeaders()
+            },
+        });
+
+        embedding = embeddingResponse.data.embeddings;
+
+        if (!embedding || !Array.isArray(embedding)) {
+            return res.status(400).json({ message: "Invalid embedding received from ML backend" });
+        }
+
+        const results = await User.aggregate([
+            {
+                "$vectorSearch": {
+                    "index": "image_search",
+                    "path": "imgEmbedding",
+                    "queryVector": embedding,
+                    "numCandidates": 10, 
+                    "limit": 5 
+                }
+            },
+            {
+                "$project": {
+                    "imgEmbedding": 0 ,
+                    'score': {
+                        '$meta': 'vectorSearchScore'
+                    }
+                }
+            }
+        ]);
+
+        // Respond with the search results
+        return res.status(200).json(results);
+        
+    } catch (error) {
+        console.error("Error during image search:", error); // Log the error for debugging
+        return res.status(500).json({ message: "An error occurred while processing the image", error: error.message });
+    } finally {
+        // Optionally, you can delete the uploaded image after processing
+        fs.unlink(imagePath, (err) => {
+            if (err) console.error("Error deleting image file:", err);
+        });
+    }
+};
 module.exports = {
     getUserProfile,
     followUnfollow,
     Suggestion,
     updateUser,
     getChatList,
-    suggestedChat,searchUser,getUserById
+    suggestedChat,searchUser,getFollowersFollowings,reportUser,blockUser,searchWithImage
 };
