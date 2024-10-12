@@ -7,6 +7,8 @@ from textblob import TextBlob
 import os
 from sentence_transformers import SentenceTransformer
 from PIL import Image
+import warnings
+warnings.filterwarnings("ignore")
 import io
 import numpy as np
 UPLOAD_FOLDER = './images'
@@ -106,4 +108,4 @@ def get_embeddings():
 
     return jsonify({'error': 'Invalid request method'}), 405  # Handle non-POST requests
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=3002, debug=True)
+    app.run(host='0.0.0.0', port=3007, debug=True)
