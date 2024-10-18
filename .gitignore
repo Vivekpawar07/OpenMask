@@ -2,8 +2,6 @@
 client/.env
 server/.env
 
-# Ignore node_modules (common for Node.js projects)
-server/node_modules/
 
 # Ignore public folder if necessary
 server/public/
@@ -12,6 +10,3 @@ server/public/
 ML backend/models/
 ML backend/GRE.py
 ML backend/sentiment.py
-
-# ignore App.js in th Client
-client/src/App.js
