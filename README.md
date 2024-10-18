@@ -101,5 +101,5 @@ Note:
 
 Feel free to contribute, raise issues, or contact me:
 
-	•	LinkedIn: Vivek Pawar
+	•	LinkedIn: https://www.linkedin.com/in/vivek-pawar-127b70293?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app
 	•	Email: vivekpawarvp07@gmail.com
