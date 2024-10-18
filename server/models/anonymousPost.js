@@ -1,19 +1,25 @@
 const  mongoose = require("mongoose") ;
-
+const commentSchema = new mongoose.Schema(
+	{
+	  text: {
+		type: String,
+		required: true,
+	  }
+	},
+	{ timestamps: true } 
+  );
 const postSchema = new mongoose.Schema(
 	{
 		text: {
 			type: String,
 		},
-		likes: {type: Number,default: 0,},
-		comments: [
+		likes: [
 			{
-				text: {
-					type: String,
-					required: true,
-				},
+			  type: mongoose.Schema.Types.ObjectId,
+			  ref: "User",
 			},
-		],
+		  ],
+		  comments: [commentSchema],
 	},
 	{ timestamps: true }
 );

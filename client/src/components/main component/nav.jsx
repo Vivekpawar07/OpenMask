@@ -35,10 +35,12 @@ export default function Nav() {
                     <p className="text-white text-xs">Home</p>
                 </div>
                 </Link>
+                <Link to='/anonymous'>
                 <div className="flex gap-2 h-[30px] w-[160px] p-2 justify-start items-center rounded-xl transition-colors duration-300 hover:bg-gray-700">
                     <AccountCircleRoundedIcon className="text-white text-xs"/>
                     <p className="text-white text-xs">Anonymous</p>
                 </div>
+                </Link>
                 <Link to='/message'>
                 <div className="flex gap-2 h-[30px] w-[160px] p-2 justify-start items-center rounded-xl transition-colors duration-300 hover:bg-gray-700">
                     <MessageIcon className="text-white text-xs" />

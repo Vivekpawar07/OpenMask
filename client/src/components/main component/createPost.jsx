@@ -42,7 +42,7 @@ export default function CreatePost({ closePopup }) {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [closePopup]);
-
+  const type = 'image';
   const handleImageUpload = (event) => {
     const file = event.target.files[0];
     if (file) {
@@ -60,25 +60,26 @@ export default function CreatePost({ closePopup }) {
     const formData = new FormData();
     formData.append("_id", user._id); 
     formData.append("caption", caption);
-    if (imageFile) { // Use the actual image file
-      formData.append("profilePicture", imageFile); // Ensure this matches your field name
+    formData.append('type',type);
+    if (imageFile) { 
+      formData.append("profilePicture", imageFile); 
     }
 
     try {
-      setIsSubmitting(true); // Disable button during submission
+      setIsSubmitting(true); 
       const response = await fetch(`${process.env.REACT_APP_BACKEND_SERVER_URL}/feed/create`, {
         method: "POST",
         body: formData,
         headers: {
-          Authorization: `${localStorage.token}`, // Adjust as needed for your auth
+          Authorization: `${localStorage.token}`,
         },
       });
 
       const result = await response.json();
       if (response.ok) {
         toast.success("Post created successfully");
-        console.log(result); // Process the result
-        setTimeout(closePopup, 2000); // Close popup after 2 seconds
+        console.log(result); 
+        setTimeout(closePopup, 2000);
       } else {
         toast.error(result.message || "Failed to create post");
       }
@@ -86,7 +87,7 @@ export default function CreatePost({ closePopup }) {
       console.error("Error creating post:", error);
       toast.error("An error occurred while creating the post.");
     } finally {
-      setIsSubmitting(false); // Re-enable the button
+      setIsSubmitting(false); 
     }
   };
 

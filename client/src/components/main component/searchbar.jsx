@@ -5,7 +5,9 @@ import { AuthContext } from '../../context/AuthContext';
 import Show from "./showUser";
 import useDebouncedSearch from '../../hooks/searchHook'; // Import the custom hook
 import { styled } from '@mui/material/styles';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import ImageSearch from '../../images/imaegSearch.jpeg';
+import { useNavigate } from "react-router-dom";
+
 
 const VisuallyHiddenInput = styled('input')({
   clip: 'rect(0 0 0 0)',
@@ -20,8 +22,22 @@ const VisuallyHiddenInput = styled('input')({
 });
 
 export default function SearchBar() {
+    const navigate = useNavigate();
     const { user } = useContext(AuthContext);
     const { search, setSearch, results, isLoading } = useDebouncedSearch('', 300); 
+    const [isImageSearch, setIsImageSearch] = useState(false);
+    const [uploadedImage, setUploadedImage] = useState(null);
+    const [imageFile, setImageFile] = useState(null);
+    const [imageSearch, setImageSearch] = useState([]);
+    const [isSearching, setIsSearching] = useState(false);  // Fixed typo here: `cosnt` -> `const`
+
+    const getProfile = (user) => {
+        navigate(`/profile/${user.username}`, { state: { userProfile: user } });
+    };
+
+    const handleImageSearchDiv = () => {
+        setIsImageSearch(!isImageSearch);
+    };
 
     const clearSearch = () => {
         setSearch('');
@@ -30,11 +46,8 @@ export default function SearchBar() {
     const handleSearch = (e) => {
         setSearch(e.target.value);
     };
-    
-    const [uploadedImage, setUploadedImage] = useState(null);
-    const [imageFile, setImageFile] = useState(null);
-    
-    const handleImageSearch = async() => {
+
+    const handleImageSearch = async () => {
         const formData = new FormData(); 
         if (imageFile) {
             formData.append("profilePicture", imageFile); 
@@ -47,7 +60,11 @@ export default function SearchBar() {
                     body: formData,
                 });
                 const result = await response.json();
-                console.log(result);
+                if (response.ok) {
+                    setImageSearch(result);
+                } else {
+                    console.error('Error during image search:', response.statusText);
+                }
             } catch (error) {
                 console.error('Error during image search:', error);
             }
@@ -56,16 +73,14 @@ export default function SearchBar() {
 
     const handleImageUpload = (event) => {
         const file = event.target.files[0];
-        console.log(file)
         if (file) {
             const imageUrl = URL.createObjectURL(file);
             setUploadedImage(imageUrl); 
             setImageFile(file);
-            console.log(imageFile)
             handleImageSearch(); 
         }
     };
-    
+
     return (
         <>
             <div className="fixed flex items-center gap-5 bg-custom_grey text-black ml-[15%] w-[70%] h-[60px] overflow-hidden">
@@ -86,21 +101,15 @@ export default function SearchBar() {
                 <Button
                     component="label"
                     variant="contained"
-                    startIcon={<CloudUploadIcon />}
+                    onClick={handleImageSearchDiv}
                     style={{ float: 'left', width: '180px', borderRadius: '20px', backgroundColor: '#3a6f98', fontSize: '12px' }}
                 >
                     Search with Image
-                    <VisuallyHiddenInput
-                        type="file"
-                        accept="image/*" 
-                        onChange={handleImageUpload}
-                        multiple={false}
-                    />
                 </Button>
             </div>
 
             {isLoading ? (
-                <div>Loading...</div> // Show loading state
+                <div>Loading...</div>
             ) : (
                 results.length > 0 && (
                     <div className="z-100 fixed flex flex-col ml-[18%] mt-[61px] w-[360px] h-[200px] items-center bg-custom_black p-2 overflow-scroll hide-scrollbar gap-2">
@@ -109,6 +118,64 @@ export default function SearchBar() {
                         ))}
                     </div>
                 )
+            )}
+
+            {/* Popup for image upload */}
+            {isImageSearch && (
+                <div className="fixed inset-0 flex items-center bg-custom_black bg-opacity-50 z-auto">
+                    <div className="bg-custom_grey p-5 rounded shadow-md ml-[30%] flex flex-col items-center gap-3">
+                        <h2 className="text-lg font-bold mb-4">Upload an Image to Search</h2>
+                        <img src={uploadedImage || ImageSearch} alt="Uploaded" className="h-56 w-56 rounded-2xl" />
+                        <Button
+                            component="label"
+                            variant="contained"
+                            style={{ float: 'left', width: '180px', borderRadius: '20px', backgroundColor: '#3a6f98', fontSize: '12px' }}
+                        >
+                            Upload Image
+                            <VisuallyHiddenInput
+                                type="file"
+                                accept="image/*"
+                                onChange={handleImageUpload}
+                                multiple={false}
+                            />
+                        </Button>
+
+                        {isSearching ? (
+                            <div>Loading...</div>
+                        ) : (
+                            imageSearch.length > 0 && (
+                                imageSearch.map((user, index) => (
+                                    <div key={index} className="flex w-full rounded-xl bg-custom_grey p-2 gap-2" onClick={() => getProfile(user)}>
+                                        <div className="rounded-full overflow-hidden">
+                                            <img src={user.profilePic} alt="Profile" className="h-12 w-12" />
+                                        </div>
+                                        <div>
+                                            <h1>{user.username}</h1>
+                                            <p>{user.fullname}</p>
+                                        </div>
+                                    </div>
+                                ))
+                            )
+                        )}
+
+                        <div className="flex mt-4">
+                            <Button
+                                variant="outlined"
+                                onClick={handleImageSearch}
+                                style={{ marginLeft: '10px' }}
+                            >
+                                Search
+                            </Button>
+                            <Button
+                                variant="outlined"
+                                onClick={handleImageSearchDiv}
+                                style={{ marginLeft: '10px' }}
+                            >
+                                Cancel
+                            </Button>
+                        </div>
+                    </div>
+                </div>
             )}
         </>
     );

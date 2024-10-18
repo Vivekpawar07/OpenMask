@@ -5,7 +5,6 @@ export default function Show({user, onUserSelect}){
     const getProfile = ()=>{
         navigate(`/profile/${user.username}` ,{ state: { userProfile: user } });
         onUserSelect();
-        
     }
     return (
         <>

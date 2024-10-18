@@ -1,21 +1,51 @@
 const Post = require('../models/anonymousPost.js') ;
 const cloudinary = require('cloudinary').v2;
-
+const axios = require('axios');
 const createPost = async (req, res) => {
-	try {
-		const text = req.body.caption;
-		if (!text) {
-			return res.status(400).json({ error: "Post must have text" });
-		}
-		const newPost = new Post({
-			text
-		});
-		await newPost.save();
-		res.status(201).json(newPost);
-	} catch (error) {
-		res.status(500).json({ error: "Internal server error" });
-		console.log("Error in createPost controller: ", error);
-	}
+    try {
+        // Log the request body
+        console.log(req.body);
+
+        // Extract the caption text
+        const text = req.body.caption;
+        if (!text) {
+            return res.status(400).json({ error: "Post must have text" });
+        }
+
+        // Send the input to the ML backend for toxicity prediction
+        const getValidation = await axios.post(`${process.env.ML_BACKEND_SERVER}/predict_toxicity`, {
+            'input': text
+        });
+
+        const result = getValidation.data;
+
+        // Check if the message is 'OK' (i.e., safe to post)
+        if (result.predictions) {
+            const newPost = new Post({
+                text
+            });
+            await newPost.save();
+            return res.status(201).json(newPost);
+        } else if (result.error) {
+            return res.status(400).json({
+                error: "Post content violates your guidelines",
+                reason: result.reason || "Unknown reason"
+            });
+        }
+
+    } catch (error) {
+        // Handle different errors
+        if (error.response && error.response.data) {
+            // Error from the ML backend
+            return res.status(error.response.status || 500).json({
+                error: error.response.data.error || "Error from toxicity API",
+                reason: error.response.data.reason || null
+            });
+        } else {
+            // Generic server error
+            return res.status(500).json({ error: "Internal server error" });
+        }
+    }
 };
 const deletePost = async (req, res) => {
 	try {
@@ -23,7 +53,6 @@ const deletePost = async (req, res) => {
 		if (!post) {
 			return res.status(404).json({ error: "Post not found" });
 		}
-
 		if (post.user.toString() !== req.body._id.toString()) {
 			return res.status(401).json({ error: "You are not authorized to delete this post" });
 		}
@@ -70,17 +99,14 @@ const commentOnPost = async (req, res) => {
 const likeUnlikePost = async (req, res) => {
 	try {
 		const { id: postId } = req.params;
-
+		const userId = req.body._id;
 		const post = await Post.findById(postId);
-
+		
 		if (!post) {
 			return res.status(404).json({ error: "Post not found" });
 		}
-
-	
-		post.likes += 1; 
+		post.likes.push(userId);
 		await post.save();
-
 		res.status(200).json({ likes: post.likes }); 
 	} catch (error) {
 		console.log("Error in likeUnlikePost controller: ", error);

@@ -1,44 +1,57 @@
-const  Notification = require("../models/notification.js") ;
-const Post = require('../models/post.js') ;
+const Notification = require("../models/notification.js");
+const Post = require('../models/post.js');
 const User = require('../models/user.js');
 const cloudinary = require('cloudinary').v2;
+const mongoose = require('mongoose');
 
 const createPost = async (req, res) => {
     try {
         const text = req.body.caption;
         const userId = req.body._id.toString();
-        let postUrl; // Declare postUrl here for proper scope
+        
+        // Validate userId
+        if (!mongoose.Types.ObjectId.isValid(userId)) {
+            return res.status(400).json({ error: "Invalid user ID" });
+        }
 
         const user = await User.findById(userId);
         if (!user) return res.status(404).json({ message: "User not found" });
 
-        // Ensure at least one of text or image is provided
         if (!text && !req.file) {
             return res.status(400).json({ error: "Post must have text or image" });
         }
 
-        // Handle image upload if a file is present
+        let postUrl;
+
         if (req.file) {
             try {
                 const cloudinaryUpload = await cloudinary.uploader.upload(req.file.path, {
                     folder: "user_posts",
                 });
-                postUrl = cloudinaryUpload.secure_url; // Store the image URL
+                postUrl = cloudinaryUpload.secure_url;
             } catch (err) {
                 console.error(err);
                 return res.status(500).json({ message: "Error uploading image", success: false });
             }
         }
 
-        // Create a new post
         const newPost = new Post({
             user: userId,
             text,
-            img: postUrl || null, // Assign postUrl or null if no image
+            img: postUrl || null,
         });
+        await newPost.save();
 
-        await newPost.save(); // Save the post to the database
-        res.status(201).json(newPost); // Respond with the newly created post
+        const followerIds = user.followers;
+        const notifications = followerIds.map(followerId => ({
+            type: 'post',
+            from: userId,
+            to: followerId
+        }));
+
+        await Notification.insertMany(notifications);
+
+        res.status(201).json(newPost);
     } catch (error) {
         console.error("Error in createPost controller:", error);
         res.status(500).json({ error: "Internal server error" });
@@ -87,6 +100,12 @@ const commentOnPost = async (req, res) => {
 
 		post.comments.push(comment);
 		await post.save();
+		const newNotification = new Notification({
+			type:'comment',
+			from: userId,
+			to:post.user
+		})
+		await newNotification.save();
 
 		res.status(200).json(post);
 	} catch (error) {

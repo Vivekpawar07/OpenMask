@@ -32,17 +32,12 @@ const signup = async (req, res) => {
         
         if (req.file) {
             try {
-                // Upload profile picture to Cloudinary
                 const cloudinaryUpload = await cloudinary.uploader.upload(req.file.path, {
                     folder: "user_profiles", 
                 });
                 profilePicUrl = cloudinaryUpload.secure_url;
-
-                // Prepare the image for the ML backend by reading it from the filesystem
                 const formData = new FormData();
-                formData.append('image', fs.createReadStream(req.file.path));  // Create a readable stream for the image file
-
-                // Send the image file to the ML backend server for generating embeddings
+                formData.append('image', fs.createReadStream(req.file.path)); 
                 const embeddingResponse = await axios.post(`${process.env.ML_BACKEND_SERVER}/get_embeddings`, formData, {
                     headers: {
                         ...formData.getHeaders() 
@@ -55,8 +50,6 @@ const signup = async (req, res) => {
                 return;
             }
         }
-
-        // Hash the password before saving the user
         const hashedPassword = await bcrypt.hash(password, 10);
 
         // Create a new user object with the profile picture and image embedding

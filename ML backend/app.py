@@ -1,6 +1,7 @@
 import pickle
 from scipy.sparse import hstack
-from flask import Flask, request, jsonify
+from fastapi import FastAPI, Request, UploadFile, File, HTTPException
+from fastapi.responses import JSONResponse
 import torch
 from transformers import T5Tokenizer, T5ForConditionalGeneration
 from textblob import TextBlob
@@ -8,23 +9,32 @@ import os
 from sentence_transformers import SentenceTransformer
 from PIL import Image
 import warnings
-warnings.filterwarnings("ignore")
 import io
 import numpy as np
+from nudenet import NudeDetector
+
+warnings.filterwarnings("ignore")
+
 UPLOAD_FOLDER = './images'
 ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg'])
 model = SentenceTransformer('clip-ViT-L-14')
-app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app = FastAPI()
 grammar_model_name = 'models/GRE MODEL/fine_tuned_t5_grammar'
 tokenizer = T5Tokenizer.from_pretrained(grammar_model_name)
 grammar_model = T5ForConditionalGeneration.from_pretrained(grammar_model_name)
 
+# Initialize the NudeClassifier
+nudity_classifier = NudeDetector()
+
 class_names = ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate']
+
+
 def resize_image(file_path, size=(224, 224)):
     img = Image.open(file_path)
     img = img.resize(size)
     img.save(file_path)
+
+
 # Load vectorizers
 with open('models/Sentiment Model/models/word_vectorizer.pkl', 'rb') as f:
     word_vectorizer = pickle.load(f)
@@ -56,18 +66,35 @@ def predict_toxicity(user_input):
     return predictions, probs
 
 
-@app.route('/predict_toxicity', methods=['POST'])
-def predict_toxicity_api():
-    data = request.json
-    user_input = data.get('input', '')
-    predictions, probs = predict_toxicity(user_input)
-    return jsonify(predictions, probs)
+@app.post("/predict_toxicity")
+async def predict_toxicity_api(request: Request):
+    try:
+        data = await request.json()
+        user_input = data.get('input', '')
+        if not user_input:
+            raise HTTPException(status_code=400, detail="Input field is required")
+
+        predictions, probs = predict_toxicity(user_input)
+        is_toxic = [key for key, value in predictions.items() if value]
+
+        if len(is_toxic) > 0:
+            return JSONResponse(status_code=400,
+                                content={"error": "Text is not suitable for posting", "reason": is_toxic})
+
+        return {"predictions": predictions}
+    except KeyError:
+        raise HTTPException(status_code=400, detail="Invalid JSON structure")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.route('/correct_grammar', methods=['POST'])
-def correct_grammar_api():
-    data = request.json
-    custom_input = data.get('input', [])
+@app.post("/correct_grammar")
+async def correct_grammar_api(request: Request):
+    data = await request.json()
+    custom_input = data.get('input', '')
+    if not custom_input:
+        raise HTTPException(status_code=400, detail="Input field is required")
+
     corrected_input = str(TextBlob(custom_input).correct())
     inputs_tokenized = tokenizer(corrected_input, return_tensors="pt", padding="max_length", max_length=64,
                                  truncation=True)
@@ -77,35 +104,60 @@ def correct_grammar_api():
         generated_ids = grammar_model.generate(inputs_tokenized["input_ids"], max_length=64)
 
     predictions = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
-    return jsonify(predictions)
+    return {"predictions": predictions}
 
 
-@app.route('/get_embeddings', methods=['GET','POST'])
-def get_embeddings():
-    if request.method == 'POST':
-        if 'image' not in request.files:
-            return jsonify({'error': 'No image file provided'}), 400
+@app.post("/get_embeddings")
+async def get_embeddings(image: UploadFile = File(...)):
+    try:
+        if image.filename == '':
+            raise HTTPException(status_code=400, detail="No selected file")
 
-        file = request.files['image']
+        file_path = os.path.join(UPLOAD_FOLDER, image.filename)
 
-        if file.filename == '':
-            return jsonify({'error': 'No selected file'}), 400
-
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
-        file.save(file_path)
+        # Save and resize the image
+        with open(file_path, "wb") as f:
+            f.write(await image.read())
         resize_image(file_path)
 
-        try:
-            # Generate embeddings
-            embeddings = model.encode(file_path, convert_to_tensor=True)
+        # Generate embeddings
+        embeddings = model.encode(file_path, convert_to_tensor=True)
 
-            os.remove(file_path)
+        os.remove(file_path)
 
-            return jsonify({'embeddings': embeddings.tolist()})
+        return {"embeddings": embeddings.tolist()}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-        except Exception as e:
-            return jsonify({'error': str(e)}), 500
 
-    return jsonify({'error': 'Invalid request method'}), 405  # Handle non-POST requests
+@app.post("/check_nudity")
+async def check_nudity(image: UploadFile = File(...)):
+    try:
+        if image.filename == '':
+            raise HTTPException(status_code=400, detail="No selected file")
+
+        # Save the image temporarily
+        file_path = os.path.join(UPLOAD_FOLDER, image.filename)
+        with open(file_path, "wb") as f:
+            f.write(await image.read())
+
+        # Classify the image for nudity
+        results = nudity_classifier.detect(file_path)
+
+        # Clean up: remove the saved image
+        os.remove(file_path)
+
+        # if results['label'] == 'Nudity':
+        #     return JSONResponse(status_code=400, content={"error": "Image contains nudity"})
+        # else:
+        #     return {"message": "Image is safe"}
+        return results
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=3007, debug=True)
+    import uvicorn
+
+    uvicorn.run(app, host='0.0.0.0', port=3007)
