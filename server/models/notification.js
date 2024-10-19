@@ -15,12 +15,10 @@ const notificationSchema  = new mongoose.Schema({
         type:String,
         require:true,
         enum:['follow','like','comment','post','report','blocked']
-    },
-    refItem: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Post'
     }
 },{timestamps:true})
-
+notificationSchema.index({ from: 1 });
+notificationSchema.index({ to: 1 });
+notificationSchema.index({ type: 1 });
 const Notification = mongoose.model('Notification',notificationSchema);
 module.exports = Notification;

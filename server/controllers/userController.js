@@ -318,15 +318,11 @@ const blockUser = async(req,res)=>{
     }
 }
 const searchWithImage = async (req, res) => {
-    const imagePath = req.file.path; // Get the path of the uploaded image
+    const imagePath = req.file.path; 
     let embedding;
-    console.log(req.file)
     try {
-        // Prepare the image for the ML backend by reading it from the filesystem
         const formData = new FormData();
         formData.append('image', fs.createReadStream(imagePath));
-
-        // Send the image file to the ML backend server for generating embeddings
         const embeddingResponse = await axios.post(`${process.env.ML_BACKEND_SERVER}/get_embeddings`, formData, {
             headers: {
                 ...formData.getHeaders()
@@ -359,17 +355,28 @@ const searchWithImage = async (req, res) => {
             }
         ]);
 
-        // Respond with the search results
         return res.status(200).json(results);
         
     } catch (error) {
-        console.error("Error during image search:", error); // Log the error for debugging
         return res.status(500).json({ message: "An error occurred while processing the image", error: error.message });
     } finally {
-        // Optionally, you can delete the uploaded image after processing
         fs.unlink(imagePath, (err) => {
             if (err) console.error("Error deleting image file:", err);
         });
+    }
+};
+const getNotifications = async (req, res) => {
+    console.log(req.params)
+    const userId = req.params.id;
+    try {
+        const data = await Notification.find({ to: userId }).populate('from', 'username fullName profilePic') 
+        if (data.length === 0) {
+            return res.status(404).json({ message: "No Notifications Found" });
+        }
+
+        return res.status(200).json(data);
+    } catch (error) {
+        return res.status(500).json({ message: "Error fetching notifications", error });
     }
 };
 module.exports = {
@@ -378,5 +385,11 @@ module.exports = {
     Suggestion,
     updateUser,
     getChatList,
-    suggestedChat,searchUser,getFollowersFollowings,reportUser,blockUser,searchWithImage
+    suggestedChat,
+    searchUser,
+    getFollowersFollowings,
+    reportUser,
+    blockUser,
+    searchWithImage,
+    getNotifications
 };
