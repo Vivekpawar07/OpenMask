@@ -1,7 +1,8 @@
 const express = require('express');
 const procted = require('../middlewares/procted.js');
 const { getUserProfile, followUnfollow, Suggestion,updateUser,getChatList,
-    suggestedChat,searchUser,getFollowersFollowings,reportUser,blockUser,searchWithImage,getNotifications } = require('../controllers/userController.js');
+    suggestedChat,searchUser,getFollowersFollowings,reportUser,blockUser,searchWithImage
+    ,getNotifications,updateLocation } = require('../controllers/userController.js');
 const uplaodMideleware = require('../middlewares/multer.js');
 const router = express.Router();
 
@@ -17,4 +18,5 @@ router.put('/report',procted,reportUser);
 router.put('/block',procted,blockUser);
 router.post('/imageSearch',uplaodMideleware,procted,searchWithImage);
 router.get('/notifications/:id', procted, getNotifications);
+router.put(`/location`,procted,updateLocation);
 module.exports = router;

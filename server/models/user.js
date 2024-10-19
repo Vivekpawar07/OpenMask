@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
+
 const report =[{
     reportedBy: {
         type: mongoose.Schema.Types.ObjectId,
@@ -15,7 +16,8 @@ const report =[{
         type: Date,
         default: Date.now
     }
-}]
+}];
+
 const userSchema = new Schema({
     username: {
         type: String,
@@ -81,6 +83,16 @@ const userSchema = new Schema({
     isVerified: {type:Boolean,default: false},
     imgEmbedding:{
         type: [Number] 
+    },
+    location: {
+        lat: {
+            type: Number,
+            required: false
+        },
+        lng: {
+            type: Number,
+            required: false
+        }
     }
 }, { timestamps: true }); 
 

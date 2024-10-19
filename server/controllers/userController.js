@@ -379,6 +379,18 @@ const getNotifications = async (req, res) => {
         return res.status(500).json({ message: "Error fetching notifications", error });
     }
 };
+const updateLocation = async (req, res) => {
+    const { userId, location } = req.body;
+    try {
+        const user = await User.findByIdAndUpdate(userId, { location }, { new: true });
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        return res.status(200).json({ message: "Location updated successfully", user });
+    } catch (error) {
+        return res.status(500).json({ message: "Error updating location", error });
+    }
+};
 module.exports = {
     getUserProfile,
     followUnfollow,
@@ -391,5 +403,6 @@ module.exports = {
     reportUser,
     blockUser,
     searchWithImage,
-    getNotifications
+    getNotifications,
+    updateLocation,
 };

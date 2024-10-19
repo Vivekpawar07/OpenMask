@@ -1,4 +1,4 @@
-import React, { useState ,useContext} from "react";
+import React, { useState ,useContext,useEffect} from "react";
 import Poster from "../images/LoginPoster.png";
 import { TextField, Button, IconButton, InputAdornment, FormControl, InputLabel, OutlinedInput } from "@mui/material";
 import Visibility from '@mui/icons-material/Visibility';
@@ -9,7 +9,12 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from '../context/AuthContext';
+import useUpdateLocation from "../hooks/location";
+import useLocation from "../hooks/getLocation";
 export default function Login() {
+    const { location, errorMessageLoc } = useLocation(); 
+    const [errorMessage, setErrorMessage] = useState(null);
+    const { updateUsersLocation, error, loading } = useUpdateLocation();
     const [form, setForm] = useState({
         email: '',
         password: '',
@@ -44,9 +49,13 @@ export default function Login() {
 
                 setTimeout(() => {
                     localStorage.setItem('token', data.token);
-                    setUser(data.user);  // Store the user data in the context
+                    const userWithLocation = {
+                        ...data.user,
+                        location: location,
+                    };
+                    setUser(userWithLocation); 
+                    updateUsersLocation({location:userWithLocation.location, userID: userWithLocation._id}); 
                     navigate('/home'); 
-                    console.log(data);
                 }, 3000);
             } else {
                 throw new Error(data.message || 'Login failed');

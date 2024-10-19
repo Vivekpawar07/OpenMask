@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState,useContext } from "react";
 import Poster from "../images/LoginPoster.png";
 import { TextField, Button, IconButton, InputAdornment, FormControl, InputLabel, OutlinedInput } from "@mui/material";
 import Visibility from '@mui/icons-material/Visibility';
@@ -8,8 +8,13 @@ import "react-toastify/dist/ReactToastify.css";
 import { useNavigate } from "react-router-dom";
 import { styled } from '@mui/material/styles';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-
+import { AuthContext } from "../context/AuthContext";
+import useUpdateLocation from "../hooks/location";
+import useLocation from "../hooks/getLocation";
 export default function Signup() {
+    const { location, errorMessageLoc } = useLocation();
+    const { updateUsersLocation, error, loading } = useUpdateLocation();
+    const {setUser}  = useContext(AuthContext);
     const [form, setForm] = useState({
         username: '',
         email: '',
@@ -43,6 +48,7 @@ export default function Signup() {
     const handlePhoto = (e) => {
         setForm({...form, profilePicture: e.target.files[0]});
     }
+
     const handleSubmit = async () => {
         if (form.password !== form.confirmPassword) {
             toast.error("Passwords do not match", {
@@ -78,8 +84,13 @@ export default function Signup() {
                 });
                 setTimeout(() => {
                     localStorage.setItem('token', data.token);
-                    navigate('/home');
-                    console.log(data)
+                    const userWithLocation = {
+                        ...data.user,
+                        location: location,
+                    };
+                    setUser(userWithLocation); 
+                    updateUsersLocation({location:userWithLocation.location, userID: userWithLocation._id}); 
+                    navigate('/home'); 
                 }, 3000);
             } else {
                 throw new Error(data.message || 'Signup failed');
