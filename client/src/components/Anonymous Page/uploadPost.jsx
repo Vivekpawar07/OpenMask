@@ -54,7 +54,7 @@ export default function Upload() {
                     >
                         <input
                             type="text"
-                            placeholder="what's on your mind..?"
+                            placeholder="what's on your mind..?(post Anonymously)"
                             className="bg-transparent h-[30px] w-[100%] border-none outline-none text-white"
                             onChange={(e) => {setText(e.target.value);
                                 console.log(e.target.value);

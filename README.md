@@ -4,14 +4,10 @@
 
 ---
 
-### This project can be useful to showcase your skills in various domains:
+### This project covers following domains:
 1. Web Development (MERN Stack)
 2. AI/ML
 3. DevOps
-
----
-
-### If you're looking for projects for an internship in the above domains or for a final year project, it's a good choice.
 
 ---
 

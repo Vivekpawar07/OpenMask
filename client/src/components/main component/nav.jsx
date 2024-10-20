@@ -7,7 +7,9 @@ import NotificationsIcon from '@mui/icons-material/Notifications';
 import AccountCircleRoundedIcon from '@mui/icons-material/AccountCircleRounded';
 import { Link, useNavigate } from "react-router-dom";
 import CreatePost from "./createPost";
-
+import HubIcon from '@mui/icons-material/Hub';
+import SportsCricketIcon from '@mui/icons-material/SportsCricket';
+import InterpreterModeIcon from '@mui/icons-material/InterpreterMode';
 export default function Nav() {
     const [isPopupOpen, setIsPopupOpen] = useState(false);
     const navigate = useNavigate();
@@ -64,20 +66,16 @@ export default function Nav() {
             <div className="flex flex-col gap-5">
                 <p className="text-white text-xs font-bold">Anonymous Public Groups</p>
                 <div className="flex gap-2 h-[30px] w-[160px] p-2 justify-start items-center rounded-xl transition-colors duration-300 hover:bg-gray-700">
-                    <AccountCircleRoundedIcon className="text-white text-xs" />
+                    <HubIcon className="text-white text-xs" />
                     <p className="text-white text-xs font-bold">Tech</p>
                 </div>
                 <div className="flex gap-2 h-[30px] w-[160px] p-2 justify-start items-center rounded-xl transition-colors duration-300 hover:bg-gray-700">
-                    <AccountCircleRoundedIcon className="text-white text-xs" />
-                    <p className="text-white text-xs">Cricket</p>
+                    <SportsCricketIcon className="text-white text-xs" />
+                    <p className="text-white text-xs">Sports</p>
                 </div>
                 <div className="flex gap-2 h-[30px] w-[160px] p-2 justify-start items-center rounded-xl transition-colors duration-300 hover:bg-gray-700">
-                    <AccountCircleRoundedIcon className="text-white text-xs" />
+                    <InterpreterModeIcon className="text-white text-xs" />
                     <p className="text-white text-xs">Politics</p>
-                </div>
-                <div className="flex gap-2 h-[30px] w-[160px] p-2 justify-start items-center rounded-xl transition-colors duration-300 hover:bg-gray-700">
-                    <AccountCircleRoundedIcon className="text-white text-xs" />
-                    <p className="text-white text-xs">Social Awareness</p>
                 </div>
             </div>
             </div>
