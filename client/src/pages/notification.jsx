@@ -40,12 +40,12 @@ export default function Notifications(){
     return(
         <>
         <div className="flex flex-col  w-[70%] mt-[80px] ml-[20%] mr-[15%]">
-            <div className="flex flex-col p-5 gap-3 w-[86%] h-[85vh] bg-custom_grey rounded-2xl overflow-scroll">
+            <div className="flex flex-col p-5 gap-3 w-[86%] h-[85vh] bg-custom_black rounded-2xl overflow-scroll">
             {notifications.length === 0 ? (
                 <p>No notifications available</p>
             ) : (
                 notifications.map((notify) => (
-                    <div key={notify._id} className="flex w-full bg-custom_black p-3 rounded-2xl gap-2">
+                    <div key={notify._id} className="flex w-full bg-custom_grey p-3 rounded-2xl gap-2">
                         <img src={notify.from.profilePic} alt={`${notify.from.username}'s profile`} 
                         className="h-12 w-12 rounded-full"/>
                         <div className="flex flex-col">
