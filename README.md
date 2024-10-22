@@ -6,8 +6,8 @@
 
 ### This project covers following domains:
 1. Web Development (MERN Stack)
-2. AI/ML
-3. DevOps
+2. AI/ML(Fine-tunning LLM, Logistic Regression, Custom Transformer, Resnet50 , opencv , Vertor search, Unsupervised Machine Learning Algorithm(KNN), Custom Encoder-decoder architecture with Resnet 50 as encoder and LSTM as decoder.)
+3. DevOps(Git, github, github actions ,Docker , AWS)
 
 ---
 
