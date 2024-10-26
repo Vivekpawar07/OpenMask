@@ -29,7 +29,8 @@ const signup = async (req, res) => {
         const { username, email, password, fullName, dob } = req.body;
         let profilePicUrl = null;
         let embedding = null; 
-        
+        console.log(req.body);
+        console.log(req.file);
         if (req.file) {
             try {
                 const cloudinaryUpload = await cloudinary.uploader.upload(req.file.path, {

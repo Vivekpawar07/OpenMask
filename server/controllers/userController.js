@@ -366,7 +366,6 @@ const searchWithImage = async (req, res) => {
     }
 };
 const getNotifications = async (req, res) => {
-    console.log(req.params)
     const userId = req.params.id;
     try {
         const data = await Notification.find({ to: userId }).populate('from', 'username fullName profilePic') 

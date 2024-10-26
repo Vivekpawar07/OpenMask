@@ -11,6 +11,7 @@ import { useNavigate } from "react-router-dom";
 import { AuthContext } from '../context/AuthContext';
 import useUpdateLocation from "../hooks/location";
 import useLocation from "../hooks/getLocation";
+import { Link } from "react-router-dom";
 export default function Login() {
     const { location, errorMessageLoc } = useLocation(); 
     const [errorMessage, setErrorMessage] = useState(null);
@@ -148,6 +149,10 @@ export default function Login() {
                         >
                             Login
                         </Button>
+                        <div className="flex gap-1 items-center ">
+                            <p className="text-[10px]">new here..?</p>
+                            <Link to='/signup' className="text-[10px]"><span className="text-custom_blue text-[10px]">Signup</span></Link>
+                        </div>
                         <div className="flex items-center gap-2">
                             <hr style={{
                                 margin: '20px 0', width: '90px', borderRadius: '25px',

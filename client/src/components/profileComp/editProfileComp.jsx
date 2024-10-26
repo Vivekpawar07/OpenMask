@@ -10,8 +10,12 @@ import Box from '@mui/material/Box';
 import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
 import { AuthContext } from '../../context/AuthContext';
+import { styled } from '@mui/material/styles';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 const EditProfileModal = ({ open, onClose, userProfile }) => {
     const { setUser } = useContext(AuthContext);
+    const [uploadedImage, setUploadedImage] = useState(null);
+    const [imageFile, setImageFile] = useState(null);
     const [formData, setFormData] = useState({
         fullName: userProfile.fullName || '',
         bio: userProfile.bio || '',
@@ -28,9 +32,19 @@ const EditProfileModal = ({ open, onClose, userProfile }) => {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-    const handleMouseDownPassword = (event) => {
-        event.preventDefault();
-    };
+    const handleMouseDownPassword = (event) => event.preventDefault();
+
+    const VisuallyHiddenInput = styled('input')({
+        clip: 'rect(0 0 0 0)',
+        clipPath: 'inset(50%)',
+        height: 1,
+        overflow: 'hidden',
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        whiteSpace: 'nowrap',
+        width: 1,
+    });
 
     const handleClickShowPassword = () => setShowPassword(!showPassword);
     const handleClickShowConfirmPassword = () => setShowConfirmPassword(!showConfirmPassword);
@@ -39,39 +53,51 @@ const EditProfileModal = ({ open, onClose, userProfile }) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const handleFileChange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setFormData({ ...formData, profilePicture: reader.result });
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-
     const handleSubmit = async (e) => {
         e.preventDefault();
+        const formDataToSend = new FormData();
+        formDataToSend.append("fullName", formData.fullName);
+        formDataToSend.append("bio", formData.bio);
+        formDataToSend.append("username", formData.username);
+        formDataToSend.append("gender", formData.gender);
+        formDataToSend.append("email", formData.email);
+        formDataToSend.append("newPassword", formData.newPassword);
+        formDataToSend.append("confirmPassword", formData.confirmPassword);
+        formDataToSend.append("isVerified", formData.isVerified);
+        formDataToSend.append("_id", formData._id);
+        
+        if (imageFile) {
+            formDataToSend.append("profilePicture", imageFile);
+        }
+        
         try {
             const response = await fetch(`${process.env.REACT_APP_BACKEND_SERVER_URL}/user/update`, {
                 method: 'PUT',
                 headers: {
-                    'Content-Type': 'application/json',
                     'Authorization': `${localStorage.getItem('token')}`
                 },
-                body: JSON.stringify(formData)
+                body: formDataToSend
             });
             const data = await response.json();
             if (!response.ok) {
                 throw new Error('Failed to update profile');
             }
             setUser(data);
-
             onClose();
         } catch (error) {
             console.error(error);
         }
     };
+
+    const handleImageUpload = (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            const imageUrl = URL.createObjectURL(file);
+            setUploadedImage(imageUrl);
+            setImageFile(file);
+        }
+    };
+
 
     const style = {
         backgroundColor: "#2c2c2c",
@@ -248,13 +274,12 @@ const EditProfileModal = ({ open, onClose, userProfile }) => {
                         </div>
 
                         <div className="flex flex-col items-center gap-3 mt-4 mb-5">
-                            <img src={formData.profilePicture} alt="" className='contain h-32 w-32 rounded-full' />
-                            <Button variant="contained" component="label">
-                                Change Profile Picture
-                                <input
+                            <img src={uploadedImage || formData.profilePicture} alt="" className='contain h-32 w-32 rounded-full' />
+                            <Button variant="contained" component="label" startIcon={<CloudUploadIcon />}>
+                                Upload Profile
+                                <VisuallyHiddenInput
                                     type="file"
-                                    hidden
-                                    onChange={handleFileChange}
+                                    onChange={handleImageUpload}
                                 />
                             </Button>
                         </div>
