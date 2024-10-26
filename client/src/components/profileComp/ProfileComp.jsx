@@ -1,4 +1,4 @@
-import React, { useRef,useState } from "react";
+import React, { useRef,useState,useContext } from "react";
 import { formatDistanceToNow } from 'date-fns';
 import Comments from "../home components/feed/commentStructure";
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
@@ -8,14 +8,17 @@ import { Button } from "@mui/material";
 import Send from "@mui/icons-material/Send";
 import { useLikeUnlike } from '../../hooks/LikeUnlike';
 import { useHandleComment } from '../../hooks/commentHook';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import { AuthContext } from "../../context/AuthContext";
+import LongMenu from "../../mui/more";
 export default function ProfilePost({ post, closeModal,currentProfile }) {
+    const { user } = useContext(AuthContext);
     const modalRef = useRef(null);
     const handleClickOutside = (event) => {
         if (modalRef.current && !modalRef.current.contains(event.target)) {
             closeModal(); 
         }
     };
-      
     const [liked, likeUnlike] = useLikeUnlike(post, currentProfile);
     const [comment, setComment, handleComment] = useHandleComment(post, currentProfile);
     return (
@@ -41,11 +44,17 @@ export default function ProfilePost({ post, closeModal,currentProfile }) {
 
                     {/* Right container for caption, likes, and comments */}
                     <div className="flex flex-col w-[50%] flex-1 p-4">
-                        <div className="flex gap-3">
+                        <div className="flex gap-3 justify-between">
+                            <div className="flex gap-3 ">
+
                             <img src={post.user.profilePic} alt="" className="rounded-full h-[45px] w-[45px]" />
                             <div className="flex flex-col">
                                 <p>{post.user.username}</p>
                                 <p className="text-[8px]">{formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}</p>
+                            </div>
+                            </div>
+                            <div>
+                            <LongMenu  currentUserId={user._id} userToaction={post.user._id}/>
                             </div>
                         </div>
                         <hr className="text-custom_grey border-custom_grey mt-[2%]"/>

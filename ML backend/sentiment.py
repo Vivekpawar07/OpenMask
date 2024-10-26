@@ -1,39 +1,125 @@
 import pickle
-from scipy.sparse import hstack
+
 import numpy as np
-import sklearn
-import warnings
+from scipy.sparse import hstack
+
 class_names = ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate']
-# Load vectorizers
-with open('models/Sentiment Model/models/word_vectorizer.pkl', 'rb') as f:
-    word_vectorizer = pickle.load(f)
 
-with open('models/Sentiment Model/models/char_vectorizer.pkl', 'rb') as f:
-    char_vectorizer = pickle.load(f)
+class Offensivetext:
+    def __init__(self, word_vector_path='models/Sentiment Model/models/word_vectorizer.pkl',
+                 char_vector_path='models/Sentiment Model/models/char_vectorizer.pkl',
+                 classifier_paths=None):
+        """
+        Initializes the Offensivetext class with offensive text categories and loads word and character vectorizers.
 
-# Load classifiers
-classifiers = {}
-for class_name in class_names:
-    classifier_file = f'models/Sentiment Model/models/classifier_{class_name}.pkl'
-    with open(classifier_file, 'rb') as f:
-        classifiers[class_name] = pickle.load(f)
-def predict_toxicity(user_input):
-    # Transform user input
-    user_word_features = word_vectorizer.transform([user_input])
-    user_char_features = char_vectorizer.transform([user_input])
-    user_features = hstack([user_char_features, user_word_features])
+        Attributes:
+        - class_names (list): A list of offensive text categories.
+        - word_vectors (object): Word vectorizer loaded from the specified pickle file.
+        - char_vectors (object): Character vectorizer loaded from the specified pickle file.
+        - classifiers (dict): Dictionary to hold classifiers for each class.
 
-    # Predict probabilities for each class
-    predictions = {}
-    for class_name in class_names:
-        classifier = classifiers[class_name]
-        proba = classifier.predict_proba(user_features)[:, 1][0]
-        predictions[class_name] = proba
+        Parameters:
+        - word_vector_path (str): Path to the word vectorizer pickle file.
+        - char_vector_path (str): Path to the character vectorizer pickle file.
+        - classifier_paths (dict): Dictionary containing paths for each classifier.
+        """
+        self.class_names = class_names
+        self.classifiers = {}
 
-    return predictions
+        # Load word and character vectorizers
+        self.word_vectors = self.load_model(word_vector_path, "word vectorizer")
+        self.char_vectors = self.load_model(char_vector_path, "character vectorizer")
 
-# Example user input
-user_input = "lets kill that bitch"
-predictions = predict_toxicity(user_input)
+        # Load classifiers for each class
+        if classifier_paths is None:
+            classifier_paths = {name: f'models/Sentiment Model/models/classifier_{name}.pkl' for name in self.class_names}
 
-print(predictions)
+        for class_name, path in classifier_paths.items():
+            self.classifiers[class_name] = self.load_model(path, f"classifier for {class_name}")
+
+    def load_model(self, path, model_name):
+        """Load a model from the specified path."""
+        try:
+            with open(path, 'rb') as f:
+                return pickle.load(f)
+        except FileNotFoundError:
+            print(f"Error: {model_name} file not found at {path}.")
+            return None
+        except Exception as e:
+            print(f"Error loading {model_name}: {e}")
+            return None
+
+    def _transform_input(self, text):
+        """Transforms input text into features for prediction."""
+        text_words_features = self.word_vectors.transform([text])
+        text_char_features = self.char_vectors.transform([text])
+        return hstack([text_char_features, text_words_features])
+
+    def predict_toxicity(self, text):
+        """
+        Predicts toxicity for the toxicity class.
+
+        Parameters:
+        - text (str): The input text to analyze.
+
+        Returns:
+        - float: The probability of toxicity.
+        """
+        return self._predict_class('toxic', text)
+
+    def predict_severe_toxicity(self, text):
+        """Predicts severe toxicity for the input text."""
+        return self._predict_class('severe_toxic', text)
+
+    def predict_obscene(self, text):
+        """Predicts obscenity for the input text."""
+        return self._predict_class('obscene', text)
+
+    def predict_threat(self, text):
+        """Predicts threats for the input text."""
+        return self._predict_class('threat', text)
+
+    def predict_insult(self, text):
+        """Predicts insults for the input text."""
+        return self._predict_class('insult', text)
+
+    def predict_identity_hate(self, text):
+        """Predicts identity hate for the input text."""
+        return self._predict_class('identity_hate', text)
+
+    def _predict_class(self, class_name, text):
+        """Predicts the probability for a given class name."""
+        features = self._transform_input(text)
+        classifier = self.classifiers.get(class_name)
+        output = {
+            f'{class_name}': None
+        }
+        if classifier is not None:
+            result = classifier.predict_proba(features)[:, 1][0]
+            output[class_name] = result
+            return output
+        else:
+            print(f"{class_name} classifier is not loaded.")
+            return None
+
+    def predict_all(self, text, threshold=0.75):
+        """
+        Predicts the toxicity of the input text for all classes and applies a threshold.
+
+        Parameters:
+        - text (str): The input text to analyze.
+        - threshold (float): The probability threshold for classification.
+
+        Returns:
+        - dict: A dictionary with binary predictions and probabilities for each class.
+        """
+        individual_probs = {class_name: self._predict_class(class_name, text) for class_name in self.class_names}
+        predictions = {
+            class_name: {
+                'is_offensive': str(proba[class_name] > threshold),
+                'probability': proba[class_name]
+            }
+            for class_name, proba in individual_probs.items()
+        }
+        return predictions
+

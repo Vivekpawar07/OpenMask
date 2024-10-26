@@ -3,7 +3,7 @@ import IconButton from '@mui/material/IconButton';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
-import { Report, BlockUser } from '../hooks/reportHook'; // Assuming you have report and block hooks
+import { Report, BlockUser } from '../hooks/reportHook'; 
 
 const mainOptions = ["Report", "Block user"];
 const reportOptions = ['Spam', 'Abuse', 'Fake account', 'Other'];
@@ -11,6 +11,7 @@ const reportOptions = ['Spam', 'Abuse', 'Fake account', 'Other'];
 const ITEM_HEIGHT = 48;
 
 export default function LongMenu({currentUserId,userToaction}) {
+
   const [anchorEl, setAnchorEl] = React.useState(null);
   const [currentOptions, setCurrentOptions] = React.useState(mainOptions);
   const [isReporting, setIsReporting] = React.useState(false); 
@@ -23,21 +24,22 @@ export default function LongMenu({currentUserId,userToaction}) {
   const handleClose = () => {
     setAnchorEl(null);
   };
-
+  if (currentUserId === userToaction) {
+    if (!mainOptions.includes('delete post')) {
+      mainOptions.push('delete post');
+    }
+  }
   const handleOptionClick = (option) => {
+
     if (option === "Block user") {
-      // Call block user hook or function
       BlockUser(currentUserId,userToaction);
       handleClose();
     } else if (option === "Report") {
-      // If "Report" is selected, switch to report options
       setIsReporting(true);
       setCurrentOptions(reportOptions);
     } else if (isReporting) {
-      // If it's one of the report options, call the report function
-      Report(currentUserId,userToaction,option); // Send selected report category to backend
+      Report(currentUserId,userToaction,option);
       handleClose();
-      // Reset to main options after reporting
       setTimeout(() => {
         setIsReporting(false);
         setCurrentOptions(mainOptions);

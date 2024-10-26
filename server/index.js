@@ -12,7 +12,7 @@ const messages = require('./routes/messagesRoute.js');
 const Anonymous = require('./routes/AnonymousPost.js');
 const EventsAndTrends = require('./routes/EventsAndTrends.js');
 const { app, server } = require ("./sockets/socket.js");
-
+const Transformation = require('./routes/textTransformation.js');
 
 
 // Middleware
@@ -43,7 +43,7 @@ app.use('/feed',post);
 app.use('/chat', messages);
 app.use('/anonymous',Anonymous);
 app.use('/api',EventsAndTrends);
-
+app.use('/transforme',Transformation);
 
 // server is listning through sockets
 server.listen(PORT, () => {

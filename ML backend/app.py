@@ -12,7 +12,14 @@ import warnings
 import io
 import numpy as np
 from nudenet import NudeDetector
+from sentiment import Offensivetext
+from typing import Dict
+from GRE import GEC
+from Text_Style_transfer import StyleTransferGenerator
 
+ST = StyleTransferGenerator('models/Text Style Transfer/distilgpt2_text_style_transfer.pt')
+GEC = GEC()
+offensive_text = Offensivetext()
 warnings.filterwarnings("ignore")
 
 UPLOAD_FOLDER = './images'
@@ -25,63 +32,56 @@ grammar_model = T5ForConditionalGeneration.from_pretrained(grammar_model_name)
 
 # Initialize the NudeClassifier
 nudity_classifier = NudeDetector()
-
 class_names = ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate']
 
-
+class_thresholds = {
+            "BUTTOCKS_EXPOSED": 0.85,
+            "FEMALE_BREAST_EXPOSED": 0.75,
+            "FEMALE_GENITALIA_EXPOSED": 0.55,
+            "ANUS_EXPOSED": 0.75,
+            "MALE_GENITALIA_EXPOSED": 0.55,
+}
 def resize_image(file_path, size=(224, 224)):
     img = Image.open(file_path)
     img = img.resize(size)
     img.save(file_path)
-
-
-# Load vectorizers
-with open('models/Sentiment Model/models/word_vectorizer.pkl', 'rb') as f:
-    word_vectorizer = pickle.load(f)
-
-with open('models/Sentiment Model/models/char_vectorizer.pkl', 'rb') as f:
-    char_vectorizer = pickle.load(f)
-
-classifiers = {}
-for class_name in class_names:
-    classifier_file = f'models/Sentiment Model/models/classifier_{class_name}.pkl'
-    with open(classifier_file, 'rb') as f:
-        classifiers[class_name] = pickle.load(f)
-
-
-def predict_toxicity(user_input):
-    THRESHOLD = 0.75
-    user_word_features = word_vectorizer.transform([user_input])
-    user_char_features = char_vectorizer.transform([user_input])
-    user_features = hstack([user_char_features, user_word_features])
-
-    predictions = {}
-    probs = {}
-    for class_name in class_names:
-        classifier = classifiers[class_name]
-        proba = classifier.predict_proba(user_features)[:, 1][0]
-        predictions[class_name] = True if proba > THRESHOLD else False
-        probs[class_name] = proba
-
-    return predictions, probs
-
-
 @app.post("/predict_toxicity")
 async def predict_toxicity_api(request: Request):
     try:
         data = await request.json()
+        print(data)
         user_input = data.get('input', '')
         if not user_input:
             raise HTTPException(status_code=400, detail="Input field is required")
+        prediction = offensive_text.predict_all(user_input)
+        response = {
+            'toxic': {
+                'is_offensive': bool(prediction['toxic']['is_offensive']),
+                'probability': float(prediction['toxic']['probability'])
+            },
+            'severe_toxic': {
+                'is_offensive': bool(prediction['severe_toxic']['is_offensive']),
+                'probability': float(prediction['severe_toxic']['probability'])
+            },
+            'obscene': {
+                'is_offensive': bool(prediction['obscene']['is_offensive']),
+                'probability': float(prediction['obscene']['probability'])
+            },
+            'threat': {
+                'is_offensive': bool(prediction['threat']['is_offensive']),
+                'probability': float(prediction['threat']['probability'])
+            },
+            'insult': {
+                'is_offensive': bool(prediction['insult']['is_offensive']),
+                'probability': float(prediction['insult']['probability'])
+            },
+            'identity_hate': {
+                'is_offensive': bool(prediction['identity_hate']['is_offensive']),
+                'probability': float(prediction['identity_hate']['probability'])
+            }
+        }
 
-        predictions, probs = predict_toxicity(user_input)
-        is_toxic = [key for key, value in predictions.items() if value]
-
-        if len(is_toxic) > 0:
-            return JSONResponse(status_code=400,
-                                content={"error": "Text is not suitable for posting", "reason": is_toxic})
-
-        return {"predictions": predictions}
+        return response
     except KeyError:
         raise HTTPException(status_code=400, detail="Invalid JSON structure")
     except Exception as e:
@@ -94,16 +94,7 @@ async def correct_grammar_api(request: Request):
     custom_input = data.get('input', '')
     if not custom_input:
         raise HTTPException(status_code=400, detail="Input field is required")
-
-    corrected_input = str(TextBlob(custom_input).correct())
-    inputs_tokenized = tokenizer(corrected_input, return_tensors="pt", padding="max_length", max_length=64,
-                                 truncation=True)
-
-    grammar_model.eval()
-    with torch.no_grad():
-        generated_ids = grammar_model.generate(inputs_tokenized["input_ids"], max_length=64)
-
-    predictions = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
+    predictions = GEC.CorrectSentence(custom_input)
     return {"predictions": predictions}
 
 
@@ -136,28 +127,54 @@ async def check_nudity(image: UploadFile = File(...)):
         if image.filename == '':
             raise HTTPException(status_code=400, detail="No selected file")
 
-        # Save the image temporarily
         file_path = os.path.join(UPLOAD_FOLDER, image.filename)
         with open(file_path, "wb") as f:
             f.write(await image.read())
 
-        # Classify the image for nudity
         results = nudity_classifier.detect(file_path)
 
-        # Clean up: remove the saved image
+        exceeded_classes = []
+
+        for result in results:
+            detected_class = result["class"]
+            score = result["score"]
+
+            if detected_class in class_thresholds and score > class_thresholds[detected_class]:
+                exceeded_classes.append(detected_class)
+
         os.remove(file_path)
 
-        # if results['label'] == 'Nudity':
-        #     return JSONResponse(status_code=400, content={"error": "Image contains nudity"})
-        # else:
-        #     return {"message": "Image is safe"}
-        return results
+        if exceeded_classes:
+            return {"result": True, "exceeded_classes": exceeded_classes,"data":results}
+
+        return {"result": False,"data":results}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/transferStyle")
+async def StyleTransfer(request: Request):
+    try:
+        data = await request.json()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid JSON format")
+
+    # Ensure input and target are both present and non-empty
+    input_text = data.get('input')
+    target = data.get('target')
+
+    if not input_text:
+        raise HTTPException(status_code=400, detail="Input field is required")
+
+    if not target:
+        raise HTTPException(status_code=400, detail="Target is required")
+
+    # Generate styled text
+    response = ST.getOutput(input_text, target)
+    return response
+
+
 
 if __name__ == '__main__':
     import uvicorn
-
     uvicorn.run(app, host='0.0.0.0', port=3007)

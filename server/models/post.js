@@ -30,6 +30,12 @@ const postSchema = new mongoose.Schema(
     img: {
       type: String,
     },
+    imgEmbeddings:{
+      type: [Number] 
+    },
+    tagsVectors:{
+      type: [Number] 
+    },
     likes: [
       {
         type: mongoose.Schema.Types.ObjectId,

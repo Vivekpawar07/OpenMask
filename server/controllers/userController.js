@@ -103,7 +103,7 @@ const updateUser = async (req, res) => {
     const { fullName, username, currentPassword, newPassword, bio,gender} = req.body;
     let profilePic = req.file ? req.file.path : null; 
     const userId = req.body._id;
-    console.log(req.file)
+    let embedding = null; 
     try {
         let user = await User.findById(userId);
         if (!user) return res.status(404).json({ message: "User not found" });
@@ -124,8 +124,19 @@ const updateUser = async (req, res) => {
             if (user.profilePic) {
                 await cloudinary.uploader.destroy(user.profilePic);
             }
-            const uploadedResponse = await cloudinary.uploader.upload(profilePic);
-            user.profilePic = uploadedResponse.secure_url;
+            const cloudinaryUpload = await cloudinary.uploader.upload(req.file.path, {
+                folder: "user_profiles", 
+            });
+            const formData = new FormData();
+            formData.append('image', fs.createReadStream(req.file.path)); 
+            const embeddingResponse = await axios.post(`${process.env.ML_BACKEND_SERVER}/get_embeddings`, formData, {
+                headers: {
+                    ...formData.getHeaders() 
+                },
+            });
+            embedding = embeddingResponse.data.embeddings;
+            user.profilePic = cloudinaryUpload.secure_url;
+            user.imgEmbedding = embedding;
         }
         if (username) user.username = username; 
         if (fullName) user.fullName = fullName; 

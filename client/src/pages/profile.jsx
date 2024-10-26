@@ -46,7 +46,6 @@ export default function Profile() {
                 }
             });
             const data = await response.json();
-            console.log(data)
             if (response.ok) {
                 setFollowers(data.followers);
                 setFollowing(data.following);

@@ -3,13 +3,14 @@ const Post = require('../models/post.js');
 const User = require('../models/user.js');
 const cloudinary = require('cloudinary').v2;
 const mongoose = require('mongoose');
-
+const { getReceiverSocketId, io } = require ("../sockets/socket.js");
+const FormData = require('form-data'); 
+const fs = require('fs'); 
+const axios = require('axios');
 const createPost = async (req, res) => {
     try {
         const text = req.body.caption;
         const userId = req.body._id.toString();
-        
-        // Validate userId
         if (!mongoose.Types.ObjectId.isValid(userId)) {
             return res.status(400).json({ error: "Invalid user ID" });
         }
@@ -22,13 +23,30 @@ const createPost = async (req, res) => {
         }
 
         let postUrl;
-
+		let embedding = null; 
         if (req.file) {
             try {
-                const cloudinaryUpload = await cloudinary.uploader.upload(req.file.path, {
-                    folder: "user_posts",
-                });
-                postUrl = cloudinaryUpload.secure_url;
+				const formData = new FormData();
+                formData.append('image', fs.createReadStream(req.file.path)); 
+				const isNude = await axios.post(`${process.env.ML_BACKEND_SERVER}/check_nudity`,{
+					headers: {
+                        ...formData.getHeaders() 
+                    },
+				});
+				if(isNude.result === false){
+					const cloudinaryUpload = await cloudinary.uploader.upload(req.file.path, {
+						folder: "user_posts",
+					});
+					postUrl = cloudinaryUpload.secure_url;
+					
+					const embeddingResponse = await axios.post(`${process.env.ML_BACKEND_SERVER}/get_embeddings`, formData, {
+						headers: {
+							...formData.getHeaders() 
+						},
+					});
+					embedding = embeddingResponse.data.embeddings;
+				}
+               res.status(400).json({error:'our system found Vulgar content in your post'})
             } catch (err) {
                 console.error(err);
                 return res.status(500).json({ message: "Error uploading image", success: false });
@@ -39,6 +57,7 @@ const createPost = async (req, res) => {
             user: userId,
             text,
             img: postUrl || null,
+			imgEmbeddings: embedding,
         });
         await newPost.save();
 
@@ -100,6 +119,7 @@ const commentOnPost = async (req, res) => {
 
 		post.comments.push(comment);
 		await post.save();
+		io.to(`post_${postId}`).emit('new_comment', { postId, comment });
 		const newNotification = new Notification({
 			type:'comment',
 			from: userId,
@@ -148,7 +168,6 @@ const likeUnlikePost = async (req, res) => {
 			await notification.save();
 
 			const updatedLikes = post.likes;
-			console.log(updatedLikes);
 			res.status(200).json(updatedLikes);
 		}
 	} catch (error) {

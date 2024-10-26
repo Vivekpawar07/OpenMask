@@ -22,7 +22,7 @@ export const useHandleComment = (post, user) => {
                 console.error('Error:', data.message);
                 return;
             }
-            console.log('Comment submitted successfully:', data);
+            setComment('');
         } catch (error) {
             console.error('An error occurred:', error);
         }

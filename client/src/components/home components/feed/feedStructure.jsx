@@ -52,7 +52,7 @@ export default function Structure({ post }) {
                         </div>
                     </div>
                 </Link>
-                <LongMenu />
+                <LongMenu currentUserId={user._id} userToaction={post.user._id}/>
             </div>
 
             <div>

@@ -6,17 +6,19 @@ import { AuthContext } from "../../context/AuthContext";
 import io from "socket.io-client";
 import DisplayChat from "./showChat";
 import { Link } from "react-router-dom";
-
+import {useGEC , useStyleTransfer} from "../../hooks/textTransformation";
+import { Menu, MenuItem, Button } from '@mui/material';
 export default function Chat() {
     const { selectedChat } = useContext(ChatContext);
     const [allChat, setAllChat] = useState([]);
     const { user } = useContext(AuthContext);
     const [socket, setSocket] = useState(null);
     const [msg, setMsg] = useState('');
-    
-    // Create a reference to the last message div
+    const [style,setStyle] = useState('');
+    const { msg: enhancedMsg, handleGEC, loading } = useGEC();
+    const { msg: styleTransferedMsg, handleStyleChange } = useStyleTransfer();
+    const [anchorEl, setAnchorEl] = useState(null);
     const lastMessageRef = useRef(null);
-
     useEffect(() => {
         const socketInstance = io(process.env.REACT_APP_BACKEND_SERVER_URL, {
             query: { userId: user._id }, 
@@ -53,7 +55,6 @@ export default function Chat() {
         getAllChat();
     }, [selectedChat._id, user._id]);
 
-    // Scroll to the last message when allChat updates
     useEffect(() => {
         if (lastMessageRef.current) {
             lastMessageRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -84,7 +85,32 @@ export default function Chat() {
             console.log('Failed to send message');
         }
     };
+    const handleEnhanceClick = async () => {
+        await handleGEC(msg); // Call the custom hook function to enhance the text
+        if (!loading && enhancedMsg) { // Check if loading is false and enhancedMsg is available
+            setMsg(enhancedMsg) // Update the input field with the enhanced message
+        }
+    };
 
+    const handleClick = (event) => {
+        setAnchorEl(event.currentTarget);
+    };
+
+    const handleClose = () => {
+        setAnchorEl(null); // Close the dropdown
+    };
+
+    const handleStyleSelect = async(style) => {
+        setStyle(style); 
+        handleClose(); 
+        if (msg !== '' || msg !==undefined || msg !== null){
+            await handleStyleChange(msg,style);
+            if (!loading && styleTransferedMsg) { 
+                setMsg(styleTransferedMsg) 
+            }
+        }
+        
+    };
     return (
         <>
             <div className="h-[85vh] w-[60%] bg-custom_grey rounded-2xl flex flex-col p-3 gap-3">
@@ -118,8 +144,37 @@ export default function Chat() {
                         onChange={(e) => setMsg(e.target.value)} 
                     />
                     <button type="button" className="text-white bg-custom_blue font-xs rounded-full text-sm px-5 py-2.5 text-center dark:bg-custom_blue" onClick={SendMsg}>send</button>
-                    <button type="button" className="text-white bg-custom_blue font-xs rounded-full text-sm px-5 py-2.5 text-center dark:bg-custom_blue">enhance</button>
-                    <button type="button" className="text-white bg-custom_blue font-xs rounded-full text-sm px-5 py-2.5 text-center dark:bg-custom_blue">style</button>
+                    <button
+                        type="button"
+                        className="text-white bg-custom_blue font-xs rounded-full text-sm px-5 py-2.5 text-center dark:bg-custom_blue"
+                        onClick={handleEnhanceClick}
+                        disabled={loading} // Disable the button while loading
+                    >
+                        {loading ? "Enhancing..." : "Enhance"} {/* Show loading state */}
+                    </button>
+                    <Button
+                        aria-controls={anchorEl ? 'simple-menu' : undefined}
+                        aria-haspopup="true"
+                        onClick={handleClick}
+                        sx={{
+                            color: 'white',
+                            backgroundColor: '#3a6f98',
+                            fontSize: '0.875rem',
+                            borderRadius: '9999px',
+                            padding: '0.625rem 1.25rem',
+                        }}>
+                        {loading ? "styling...":"style"}
+                    </Button>
+                    <Menu
+                        id="simple-menu"
+                        anchorEl={anchorEl}
+                        open={Boolean(anchorEl)}
+                        onClose={handleClose}
+                    >
+                        <MenuItem onClick={() => handleStyleSelect('Happy')}>Happy</MenuItem>
+                        <MenuItem onClick={() => handleStyleSelect('Sad')}>Sad</MenuItem>
+                        <MenuItem onClick={() => handleStyleSelect('Angry')}>Angry</MenuItem>
+                    </Menu>
                 </div>
             </div>
         </>
