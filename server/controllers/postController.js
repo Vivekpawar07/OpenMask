@@ -33,7 +33,7 @@ const createPost = async (req, res) => {
                         ...formData.getHeaders() 
                     },
 				});
-				if(isNude.result === false){
+				if(isNude.data.result === false){
 					const cloudinaryUpload = await cloudinary.uploader.upload(req.file.path, {
 						folder: "user_posts",
 					});

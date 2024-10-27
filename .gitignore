@@ -8,5 +8,5 @@ server/public/
 
 # Ignore machine learning backend models and specific Python scripts
 ML backend/models/
-ML backend/GRE.py
-ML backend/sentiment.py
+ML backend/.env
+ML backend/optimize
