@@ -49,37 +49,36 @@ def resize_image(file_path, size=(224, 224)):
 async def predict_toxicity_api(request: Request):
     try:
         data = await request.json()
-        print(data)
         user_input = data.get('input', '')
         if not user_input:
             raise HTTPException(status_code=400, detail="Input field is required")
         prediction = offensive_text.predict_all(user_input)
-        response = {
-            'toxic': {
-                'is_offensive': bool(prediction['toxic']['is_offensive']),
+        response = [
+            {
+                'label': 'toxic',
                 'probability': float(prediction['toxic']['probability'])
             },
-            'severe_toxic': {
-                'is_offensive': bool(prediction['severe_toxic']['is_offensive']),
+            {
+                'label': 'severe_toxic',
                 'probability': float(prediction['severe_toxic']['probability'])
             },
-            'obscene': {
-                'is_offensive': bool(prediction['obscene']['is_offensive']),
+            {
+                'label': 'obscene',
                 'probability': float(prediction['obscene']['probability'])
             },
-            'threat': {
-                'is_offensive': bool(prediction['threat']['is_offensive']),
+            {
+                'label': 'threat',
                 'probability': float(prediction['threat']['probability'])
             },
-            'insult': {
-                'is_offensive': bool(prediction['insult']['is_offensive']),
+            {
+                'label': 'insult',
                 'probability': float(prediction['insult']['probability'])
             },
-            'identity_hate': {
-                'is_offensive': bool(prediction['identity_hate']['is_offensive']),
+            {
+                'label': 'identity_hate',
                 'probability': float(prediction['identity_hate']['probability'])
             }
-        }
+        ]
 
         return response
     except KeyError:
@@ -123,10 +122,11 @@ async def get_embeddings(image: UploadFile = File(...)):
 
 @app.post("/check_nudity")
 async def check_nudity(image: UploadFile = File(...)):
+
     try:
         if image.filename == '':
             raise HTTPException(status_code=400, detail="No selected file")
-
+        print(image.filename)
         file_path = os.path.join(UPLOAD_FOLDER, image.filename)
         with open(file_path, "wb") as f:
             f.write(await image.read())

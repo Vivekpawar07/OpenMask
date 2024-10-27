@@ -12,7 +12,7 @@ import Notifications from "./pages/notification";
 import Profile from "./pages/profile";
 import NotFound from "./pages/404";
 import { ChatProvider } from "./context/Chat";
-
+import IntroductionPage from "./pages/landing";
 function AppContent() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const location = useLocation();
@@ -29,8 +29,8 @@ function AppContent() {
 
   // Update to use a regex to check for dynamic routes
   const shouldRenderMain = 
-    ["/home", "/anonymous", "/message", "/notification"].includes(location.pathname) ||
-    /^\/profile\/[^/]+$/.test(location.pathname); // Match /profile/:username
+    ["/home", "/anonymous", "/message", "/notification","/"].includes(location.pathname) ||
+    /^\/profile\/[^/]+$/.test(location.pathname); 
 
   return (
     <>
@@ -38,10 +38,11 @@ function AppContent() {
 
       {shouldRenderMain && <Main />}
       <Routes>
+        <Route path="/" exact element={<IntroductionPage />} />
         <Route path="/login" element={<GoogleAuthWrapper />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/home" element={<PrivateRoute element={<HomePage />} />} />
-        <Route path="/anonymous" element={<Anonymous />} />
+        <Route path="/anonymous" element={<PrivateRoute element={<Anonymous />}/>} />
         <Route path="/message" element={<PrivateRoute element={<Messages />} />} />
         <Route path="/notification" element={<PrivateRoute element={<Notifications />} />} />
         <Route path="/profile/:username" element={<PrivateRoute element={<Profile />} />} />

@@ -3,46 +3,56 @@ const cloudinary = require('cloudinary').v2;
 const axios = require('axios');
 const createPost = async (req, res) => {
     try {
-        // Log the request body
-        console.log(req.body);
-
-        // Extract the caption text
         const text = req.body.caption;
         if (!text) {
             return res.status(400).json({ error: "Post must have text" });
         }
-
-        // Send the input to the ML backend for toxicity prediction
+        
         const getValidation = await axios.post(`${process.env.ML_BACKEND_SERVER}/predict_toxicity`, {
             'input': text
         });
-
+        
         const result = getValidation.data;
+        if (result && Array.isArray(result)) {
+            for (const pred of result) { // Use 'const' to declare 'pred'
+                if (pred.label === 'toxicity' && pred.probability > 0.75) {
+                    return res.status(400).json({ error: "Post content violates your guidelines", reason: "Toxicity detected" });
+                }
+                if (pred.label === 'identity_hate' && pred.probability > 0.75) {
+                    return res.status(400).json({ error: "Post content violates your guidelines", reason: "Identity attack detected" });
+                }
+                if (pred.label === 'insult' && pred.probability > 0.75) {
+                    return res.status(400).json({ error: "Post content violates your guidelines", reason: "Insult detected" });
+                }
+                if (pred.label === 'severe_toxicity' && pred.probability > 0.75) {
+                    return res.status(400).json({ error: "Post content violates your guidelines", reason: "Severe toxicity detected" });
+                }
+                if (pred.label === 'obscene' && pred.probability > 0.75) {
+                    return res.status(400).json({ error: "Post content violates your guidelines", reason: "Obscene content detected" });
+                }
+                if (pred.label === 'threat' && pred.probability > 0.5) {
+                    return res.status(400).json({ error: "Post content violates your guidelines", reason: "Threat detected" });
+                }
+            }
 
-        // Check if the message is 'OK' (i.e., safe to post)
-        if (result.predictions) {
             const newPost = new Post({
                 text
             });
             await newPost.save();
             return res.status(201).json(newPost);
         } else if (result.error) {
-            return res.status(400).json({
-                error: "Post content violates your guidelines",
-                reason: result.reason || "Unknown reason"
+            return res.status(500).json({
+                error: "Internal server error"
             });
         }
 
     } catch (error) {
-        // Handle different errors
         if (error.response && error.response.data) {
-            // Error from the ML backend
             return res.status(error.response.status || 500).json({
                 error: error.response.data.error || "Error from toxicity API",
                 reason: error.response.data.reason || null
             });
         } else {
-            // Generic server error
             return res.status(500).json({ error: "Internal server error" });
         }
     }

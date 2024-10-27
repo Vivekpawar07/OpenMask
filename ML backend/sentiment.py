@@ -114,9 +114,9 @@ class Offensivetext:
         - dict: A dictionary with binary predictions and probabilities for each class.
         """
         individual_probs = {class_name: self._predict_class(class_name, text) for class_name in self.class_names}
+
         predictions = {
             class_name: {
-                'is_offensive': str(proba[class_name] > threshold),
                 'probability': proba[class_name]
             }
             for class_name, proba in individual_probs.items()

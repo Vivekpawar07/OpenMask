@@ -11,6 +11,8 @@ const createPost = async (req, res) => {
     try {
         const text = req.body.caption;
         const userId = req.body._id.toString();
+		console.log("Request Body:", req.body);
+        console.log("Uploaded File:", req.file);
         if (!mongoose.Types.ObjectId.isValid(userId)) {
             return res.status(400).json({ error: "Invalid user ID" });
         }
@@ -23,44 +25,57 @@ const createPost = async (req, res) => {
         }
 
         let postUrl;
-		let embedding = null; 
+        let embedding = null;
+
         if (req.file) {
             try {
-				const formData = new FormData();
-                formData.append('image', fs.createReadStream(req.file.path)); 
-				const isNude = await axios.post(`${process.env.ML_BACKEND_SERVER}/check_nudity`,{
-					headers: {
-                        ...formData.getHeaders() 
+                const nudityCheckResponse = await axios.post(`${process.env.ML_BACKEND_SERVER}/check_nudity`, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
                     },
-				});
-				if(isNude.data.result === false){
-					const cloudinaryUpload = await cloudinary.uploader.upload(req.file.path, {
-						folder: "user_posts",
-					});
-					postUrl = cloudinaryUpload.secure_url;
-					
-					const embeddingResponse = await axios.post(`${process.env.ML_BACKEND_SERVER}/get_embeddings`, formData, {
-						headers: {
-							...formData.getHeaders() 
-						},
-					});
-					embedding = embeddingResponse.data.embeddings;
-				}
-               res.status(400).json({error:'our system found Vulgar content in your post'})
+                    
+                        image: fs.createReadStream(req.file.path)
+                    
+                });
+
+                if (nudityCheckResponse.data.result === true) {
+                    return res.status(400).json({ error: 'Our system found vulgar content in your post' });
+                }
+
+                // Upload image to Cloudinary if it's not nude
+                const cloudinaryUpload = await cloudinary.uploader.upload(req.file.path, {
+                    folder: "user_posts",
+                });
+                postUrl = cloudinaryUpload.secure_url;
+
+                // Get embeddings from the ML backend
+                const formData = new FormData();
+                formData.append('image', fs.createReadStream(req.file.path));
+                
+                const embeddingResponse = await axios.post(`${process.env.ML_BACKEND_SERVER}/get_embeddings`, formData, {
+                    headers: {
+                        ...formData.getHeaders()
+                    },
+                });
+                embedding = embeddingResponse.data.embeddings;
+
             } catch (err) {
-                console.error(err);
-                return res.status(500).json({ message: "Error uploading image", success: false });
+                console.error("Error during image processing:", err);
+                return res.status(500).json({ message: "Error processing image", success: false });
             }
         }
 
+        // Create a new post
         const newPost = new Post({
             user: userId,
             text,
             img: postUrl || null,
-			imgEmbeddings: embedding,
+            imgEmbeddings: embedding,
         });
+
         await newPost.save();
 
+        // Notify followers
         const followerIds = user.followers;
         const notifications = followerIds.map(followerId => ({
             type: 'post',

@@ -23,22 +23,28 @@ export default function Upload() {
             });
 
             if (!response.ok) {
-                throw new Error('Network response was not ok');
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Network response was not ok');
             }
             const data = await response.json();
             console.log(data);
             setText(''); 
         } catch (error) {
             console.error('Error:', error);
-            setError('Failed to post. Please try again.'); // Set error message
+            setError(error.message); // Set error message based on the response
+
+            // Automatically clear the error message after 5 seconds
+            setTimeout(() => {
+                setError('');
+            }, 5000);
         } finally {
-            setIsPosting(false); // Reset posting state
+            setIsPosting(false); 
         }
     };
 
     return (
         <>
-            <div className="p-2 flex flex-col items-end gap-3 w-full h-[110px] bg-custom_grey rounded-2xl">
+            <div className="p-2 flex flex-col items-end gap-3 w-full h-[110px] bg-custom_grey rounded-2xl relative">
                 <div className="flex gap-2 w-full">
                     {/* Anonymous post */}
                     <img
@@ -56,11 +62,8 @@ export default function Upload() {
                             type="text"
                             placeholder="what's on your mind..?(post Anonymously)"
                             className="bg-transparent h-[30px] w-[100%] border-none outline-none text-white"
-                            onChange={(e) => {setText(e.target.value);
-                                console.log(e.target.value);
-                            }}
+                            onChange={(e) => { setText(e.target.value); }}
                             value={text}
-                            
                         />
                     </div>
                 </div>
@@ -73,7 +76,11 @@ export default function Upload() {
                 >
                     {isPosting ? 'Posting...' : 'Post'} 
                 </Button>
-                {error && <div className="text-red-500">{error}</div>} {/* Show error message */}
+                {error && (
+                    <div className="absolute top-0 left-1/2 transform -translate-x-1/2 mt-2 p-4 bg-red-500 text-white rounded-lg shadow-lg">
+                        {error} {/* Show error message */}
+                    </div>
+                )}
             </div>
         </>
     );
