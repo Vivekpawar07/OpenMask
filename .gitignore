@@ -9,4 +9,4 @@ server/public/
 # Ignore machine learning backend models and specific Python scripts
 ML backend/models/
 ML backend/.env
-ML backend/optimize
+ML backend/optimize.py
