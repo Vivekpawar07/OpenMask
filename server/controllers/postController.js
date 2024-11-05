@@ -11,8 +11,6 @@ const createPost = async (req, res) => {
     try {
         const text = req.body.caption;
         const userId = req.body._id.toString();
-		console.log("Request Body:", req.body);
-        console.log("Uploaded File:", req.file);
         if (!mongoose.Types.ObjectId.isValid(userId)) {
             return res.status(400).json({ error: "Invalid user ID" });
         }
@@ -26,36 +24,35 @@ const createPost = async (req, res) => {
 
         let postUrl;
         let embedding = null;
+        const imagePath = req.file.path; 
 
         if (req.file) {
+            const nudityCheckFormData = new FormData();
+            nudityCheckFormData.append('image', fs.createReadStream(imagePath));
+
             try {
-                const nudityCheckResponse = await axios.post(`${process.env.ML_BACKEND_SERVER}/check_nudity`, {
+                const nudityCheckResponse = await axios.post(`${process.env.ML_BACKEND_SERVER}/check_nudity`, nudityCheckFormData, {
                     headers: {
-                        'Content-Type': 'multipart/form-data',
-                    },
-                    
-                        image: fs.createReadStream(req.file.path)
-                    
+                        ...nudityCheckFormData.getHeaders()
+                    }
                 });
 
                 if (nudityCheckResponse.data.result === true) {
                     return res.status(400).json({ error: 'Our system found vulgar content in your post' });
                 }
 
-                // Upload image to Cloudinary if it's not nude
-                const cloudinaryUpload = await cloudinary.uploader.upload(req.file.path, {
+                const cloudinaryUpload = await cloudinary.uploader.upload(imagePath, {
                     folder: "user_posts",
                 });
                 postUrl = cloudinaryUpload.secure_url;
 
-                // Get embeddings from the ML backend
-                const formData = new FormData();
-                formData.append('image', fs.createReadStream(req.file.path));
-                
-                const embeddingResponse = await axios.post(`${process.env.ML_BACKEND_SERVER}/get_embeddings`, formData, {
+                const embeddingFormData = new FormData();
+                embeddingFormData.append('image', fs.createReadStream(imagePath));
+
+                const embeddingResponse = await axios.post(`${process.env.ML_BACKEND_SERVER}/get_embeddings`, embeddingFormData, {
                     headers: {
-                        ...formData.getHeaders()
-                    },
+                        ...embeddingFormData.getHeaders()
+                    }
                 });
                 embedding = embeddingResponse.data.embeddings;
 

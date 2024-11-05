@@ -1,19 +1,11 @@
-import pickle
-from scipy.sparse import hstack
 from fastapi import FastAPI, Request, UploadFile, File, HTTPException
-from fastapi.responses import JSONResponse
-import torch
 from transformers import T5Tokenizer, T5ForConditionalGeneration
-from textblob import TextBlob
 import os
 from sentence_transformers import SentenceTransformer
 from PIL import Image
 import warnings
-import io
-import numpy as np
 from nudenet import NudeDetector
 from sentiment import Offensivetext
-from typing import Dict
 from GRE import GEC
 from Text_Style_transfer import StyleTransferGenerator
 
@@ -30,7 +22,6 @@ grammar_model_name = 'models/GRE MODEL/fine_tuned_t5_grammar'
 tokenizer = T5Tokenizer.from_pretrained(grammar_model_name)
 grammar_model = T5ForConditionalGeneration.from_pretrained(grammar_model_name)
 
-# Initialize the NudeClassifier
 nudity_classifier = NudeDetector()
 class_names = ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate']
 
@@ -104,13 +95,9 @@ async def get_embeddings(image: UploadFile = File(...)):
             raise HTTPException(status_code=400, detail="No selected file")
 
         file_path = os.path.join(UPLOAD_FOLDER, image.filename)
-
-        # Save and resize the image
         with open(file_path, "wb") as f:
             f.write(await image.read())
         resize_image(file_path)
-
-        # Generate embeddings
         embeddings = model.encode(file_path, convert_to_tensor=True)
 
         os.remove(file_path)
@@ -119,14 +106,13 @@ async def get_embeddings(image: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
 @app.post("/check_nudity")
 async def check_nudity(image: UploadFile = File(...)):
 
     try:
         if image.filename == '':
             raise HTTPException(status_code=400, detail="No selected file")
-        print(image.filename)
+
         file_path = os.path.join(UPLOAD_FOLDER, image.filename)
         with open(file_path, "wb") as f:
             f.write(await image.read())
@@ -151,7 +137,6 @@ async def check_nudity(image: UploadFile = File(...)):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
 @app.post("/transferStyle")
 async def StyleTransfer(request: Request):
     try:
@@ -159,7 +144,6 @@ async def StyleTransfer(request: Request):
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid JSON format")
 
-    # Ensure input and target are both present and non-empty
     input_text = data.get('input')
     target = data.get('target')
 
@@ -169,7 +153,7 @@ async def StyleTransfer(request: Request):
     if not target:
         raise HTTPException(status_code=400, detail="Target is required")
 
-    # Generate styled text
+
     response = ST.getOutput(input_text, target)
     return response
 

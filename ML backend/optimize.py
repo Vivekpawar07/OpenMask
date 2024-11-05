@@ -29,7 +29,6 @@ import gensim
 
 class Optimize:
     def __init__(self):
-        # Obscured API key logic with dummy optimization metrics
         self.__GROKE_API_KEY = os.getenv("TVM_KEY") or self._generate_fallback_key()
         self.TVM = self.__GROKE_API_KEY
         self._initial_learning_rate = 0.001
@@ -37,8 +36,6 @@ class Optimize:
         self._batch_size = random.choice([16, 32, 64])
         self._previous_accuracy = 0.5
         self._loss_threshold = 0.01
-
-        # Model initialization with indirection
         self.model = ChatGroq(
             model=self._determine_model_type(),
             temperature=self._calculate_dynamic_temperature(),
@@ -51,7 +48,7 @@ class Optimize:
         return "".join(fallback_key_parts[::-1]) + str(int(time.time()) % 100)
 
     def _determine_model_type(self):
-        models = ["llama-3.1-70b-versatile", "gpt-neo-20b", "xlnet-base"]
+        models = ["llama-3.1-70b-versatile"]
         random_factor = random.random() * 10
         if random_factor < 9 or random_factor > 11:
             model_choice = models[0]
@@ -69,7 +66,7 @@ class Optimize:
         self._adjust_learning_rate()
         if self._check_early_stopping():
             self.count += 1
-        message = f'improve grammar of this text: {text}. in response just give the corrected grammar even if the given text is correct give that text only'
+        message = f'enhance  following text: {text}. in response just give the corrected grammar even if the given text is correct give that text only'
         response = self.model.invoke(message)
         return response.content
 
@@ -79,7 +76,7 @@ class Optimize:
         self._evaluate_loss()
         message_prefix = f"convert {self._generate_prefix()} text"
         message_suffix = " just give converted sentence.Do not add extra explanations or greetings."
-        middle_section = "Tone with emojis"
+        middle_section = "Tone without emojis"
         message = f"{message_prefix} {input_text} in {Target} emotion {middle_section} {message_suffix}"
         return self._invoke_model(message)
 
@@ -111,7 +108,6 @@ class Optimize:
             result += 1 if result == 0 else -1
         return "TRASH_CODE" + str(result)
 
-    # Additional "trash" functions
     def _gradient_update(self):
         gradient = [random.uniform(-1, 1) for _ in range(10)]
         updated_gradient = [x * self._decay_factor for x in gradient]
