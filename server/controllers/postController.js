@@ -24,9 +24,10 @@ const createPost = async (req, res) => {
 
         let postUrl;
         let embedding = null;
-        const imagePath = req.file.path; 
+        
 
         if (req.file) {
+			const imagePath = req.file.path; 
             const nudityCheckFormData = new FormData();
             nudityCheckFormData.append('image', fs.createReadStream(imagePath));
 
