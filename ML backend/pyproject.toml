@@ -38,3 +38,4 @@ gensim = "^4.3.3"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+package-mode = false

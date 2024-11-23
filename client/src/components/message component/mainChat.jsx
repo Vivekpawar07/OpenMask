@@ -6,22 +6,24 @@ import { AuthContext } from "../../context/AuthContext";
 import io from "socket.io-client";
 import DisplayChat from "./showChat";
 import { Link } from "react-router-dom";
-import {useGEC , useStyleTransfer} from "../../hooks/textTransformation";
+import { useGEC, useStyleTransfer } from "../../hooks/textTransformation";
 import { Menu, MenuItem, Button } from '@mui/material';
+
 export default function Chat() {
     const { selectedChat } = useContext(ChatContext);
     const [allChat, setAllChat] = useState([]);
     const { user } = useContext(AuthContext);
     const [socket, setSocket] = useState(null);
     const [msg, setMsg] = useState('');
-    const [style,setStyle] = useState('');
-    const { msg: enhancedMsg, handleGEC, loading } = useGEC();
-    const { msg: styleTransferedMsg, handleStyleChange } = useStyleTransfer();
+    const [style, setStyle] = useState('');
+    const { msg: enhancedMsg, handleGEC, isEnhancing } = useGEC();
+    const { msg: styleTransferedMsg, handleStyleChange, isStyling } = useStyleTransfer();
     const [anchorEl, setAnchorEl] = useState(null);
     const lastMessageRef = useRef(null);
+
     useEffect(() => {
         const socketInstance = io(process.env.REACT_APP_BACKEND_SERVER_URL, {
-            query: { userId: user._id }, 
+            query: { userId: user._id },
             transports: ['websocket'],
         });
 
@@ -31,7 +33,7 @@ export default function Chat() {
         });
 
         return () => {
-            socketInstance.disconnect(); 
+            socketInstance.disconnect();
         };
     }, [user._id]);
 
@@ -79,98 +81,81 @@ export default function Chat() {
         if (response.ok) {
             const data = await response.json();
             socket.emit("sendMessage", { ...messageData, receiverId: selectedChat._id });
-            setAllChat((prev) => [...prev, data]); 
-            setMsg(''); 
+            setAllChat((prev) => [...prev, data]);
+            setMsg('');
         } else {
             console.log('Failed to send message');
         }
     };
+
     const handleEnhanceClick = async () => {
-        await handleGEC(msg); // Call the custom hook function to enhance the text
-        if (!loading && enhancedMsg) { // Check if loading is false and enhancedMsg is available
-            setMsg(enhancedMsg) // Update the input field with the enhanced message
+        const enhancedText = await handleGEC(msg);
+        console.log(enhancedText); 
+        if (enhancedText) {
+            setMsg(enhancedText); 
         }
     };
+    
 
     const handleClick = (event) => {
         setAnchorEl(event.currentTarget);
     };
 
     const handleClose = () => {
-        setAnchorEl(null); // Close the dropdown
+        setAnchorEl(null);
     };
 
-    const handleStyleSelect = async(style) => {
-        setStyle(style); 
-        handleClose(); 
-        if (msg !== '' || msg !==undefined || msg !== null){
-            await handleStyleChange(msg,style);
-            if (!loading && styleTransferedMsg) { 
-                setMsg(styleTransferedMsg) 
-            }
+    const handleStyleSelect = async (selectedStyle) => {
+        setStyle(selectedStyle);
+        handleClose();
+        const styledText = await handleStyleChange(msg, selectedStyle); 
+        console.log(styledText);
+        if (styledText) {
+            setMsg(styledText); 
         }
-        
     };
+
     return (
         <>
             <div className="h-[85vh] w-[60%] bg-custom_grey rounded-2xl flex flex-col p-3 gap-3">
-                {/* this is the header */}
+                {/* Header */}
                 <div className="flex gap-2">
-                    <Link to={`/profile/${selectedChat.username}`} state ={{userProfile:selectedChat}}>
-                    <img src={selectedChat.profilePic} alt="" className="rounded-full h-12 w-12" />
-                    <div className="">
-                        <p className="text-xs font-semibold">{selectedChat.username}</p>
-                        <p className="text-xs "> full name</p>
-                    </div>
+                    <Link to={`/profile/${selectedChat.username}`} state={{ userProfile: selectedChat }}>
+                        <img src={selectedChat.profilePic} alt="" className="rounded-full h-12 w-12" />
+                        <div>
+                            <p className="text-xs font-semibold">{selectedChat.username}</p>
+                            <p className="text-xs">Full Name</p>
+                        </div>
                     </Link>
                 </div>
                 <Divider sx={{ borderColor: 'white' }} />
-                {/* this is chat component */}
+                {/* Chat */}
                 <div className="h-[82%] flex flex-col overflow-scroll hide-scrollbar">
                     {allChat.map((text, index) => (
                         <DisplayChat key={index} text={text} />
                     ))}
                     <div ref={lastMessageRef} />
                 </div>
-                {/* text input */}
-                <div className="flex items-center border-[1px] border-custom_grey  
-                    gap-2 justify-start rounded-2xl p-1 shadow-inner px-1
-                    shadow-white" style={{
-                        boxShadow: 'rgba(0, 0, 0, 0.6) 0px 3px 6px 0px inset, rgba(50, 50, 50, 0.5) 0px -3px 6px 1px inset'
-                    }}>
+                {/* Input */}
+                <div className="flex items-center border-[1px] border-custom_grey gap-2 rounded-2xl p-1 shadow-inner px-1">
                     <InsertPhotoIcon />
-                    <input type="text" placeholder="text" className="bg-transparent h-[30px] w-full border-none outline-none text-white" 
-                        value={msg} 
-                        onChange={(e) => setMsg(e.target.value)} 
+                    <input
+                        type="text"
+                        placeholder="text"
+                        className="bg-transparent h-[30px] w-full border-none outline-none text-white"
+                        value={msg}
+                        onChange={(e) => setMsg(e.target.value)}
                     />
-                    <button type="button" className="text-white bg-custom_blue font-xs rounded-full text-sm px-5 py-2.5 text-center dark:bg-custom_blue" onClick={SendMsg}>send</button>
-                    <button
-                        type="button"
-                        className="text-white bg-custom_blue font-xs rounded-full text-sm px-5 py-2.5 text-center dark:bg-custom_blue"
-                        onClick={handleEnhanceClick}
-                        disabled={loading} // Disable the button while loading
-                    >
-                        {loading ? "Enhancing..." : "Enhance"} {/* Show loading state */}
+                    <button onClick={SendMsg} disabled={!msg.trim()}>
+                        Send
                     </button>
-                    <Button
-                        aria-controls={anchorEl ? 'simple-menu' : undefined}
-                        aria-haspopup="true"
-                        onClick={handleClick}
-                        sx={{
-                            color: 'white',
-                            backgroundColor: '#3a6f98',
-                            fontSize: '0.875rem',
-                            borderRadius: '9999px',
-                            padding: '0.625rem 1.25rem',
-                        }}>
-                        {loading ? "styling...":"style"}
+                    <button onClick={handleEnhanceClick} disabled={isEnhancing}>
+                        {isEnhancing ? "Enhancing..." : "Enhance"}
+                    </button>
+                    <Button onClick={handleClick} disabled={isStyling}>
+                        {isStyling ? "Styling..." : "Style"}
                     </Button>
-                    <Menu
-                        id="simple-menu"
-                        anchorEl={anchorEl}
-                        open={Boolean(anchorEl)}
-                        onClose={handleClose}
-                    >
+                    <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleClose}>
                         <MenuItem onClick={() => handleStyleSelect('Happy')}>Happy</MenuItem>
                         <MenuItem onClick={() => handleStyleSelect('Sad')}>Sad</MenuItem>
                         <MenuItem onClick={() => handleStyleSelect('Angry')}>Angry</MenuItem>

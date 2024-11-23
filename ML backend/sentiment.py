@@ -1,6 +1,4 @@
 import pickle
-
-import numpy as np
 from scipy.sparse import hstack
 
 class_names = ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate']

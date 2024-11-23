@@ -10,3 +10,4 @@ server/public/
 ML backend/models/
 ML backend/.env
 ML backend/optimize.py
+ML backend/__pycache__
