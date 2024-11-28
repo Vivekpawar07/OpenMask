@@ -19,6 +19,10 @@ export default function Login() {
     const [form, setForm] = useState({
         email: '',
         password: '',
+        // latestActiveLocation:{
+        //     lat: location.lat,
+        //     lng: location.lng,
+        // }
     });
     const [showPassword, setShowPassword] = useState(false);
     const navigate = useNavigate(); 

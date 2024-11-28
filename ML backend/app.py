@@ -8,23 +8,30 @@ from nudenet import NudeDetector
 from sentiment import Offensivetext
 from GRE import GEC
 from Text_Style_transfer import StyleTransferGenerator
+from tagger import ImageTagger
+from sentence_transformers import SentenceTransformer
+warnings.filterwarnings("ignore")
+
+
+
 
 ST = StyleTransferGenerator('models/Text Style Transfer/distilgpt2_text_style_transfer.pt')
 GEC = GEC()
+sentence_model = SentenceTransformer('paraphrase-MiniLM-L6-v2')
 offensive_text = Offensivetext()
-warnings.filterwarnings("ignore")
-
-UPLOAD_FOLDER = './images'
-ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg'])
+getTags = ImageTagger()
 model = SentenceTransformer('clip-ViT-L-14')
 app = FastAPI()
 grammar_model_name = 'models/GRE MODEL/fine_tuned_t5_grammar'
 tokenizer = T5Tokenizer.from_pretrained(grammar_model_name)
 grammar_model = T5ForConditionalGeneration.from_pretrained(grammar_model_name)
-
 nudity_classifier = NudeDetector()
-class_names = ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate']
 
+
+UPLOAD_FOLDER = './images'
+ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg'])
+
+class_names = ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate']
 class_thresholds = {
             "BUTTOCKS_EXPOSED": 0.85,
             "FEMALE_BREAST_EXPOSED": 0.75,
@@ -157,7 +164,41 @@ async def StyleTransfer(request: Request):
     response = ST.getOutput(input_text, target)
     return response
 
+@app.post("/imagetags")
+async def imagetags(image: UploadFile = File(...)):
+    try:
+        if image.filename == '':
+            raise HTTPException(status_code=400, detail="No selected file")
 
+   
+        file_path = os.path.join(UPLOAD_FOLDER, image.filename)
+        with open(file_path, "wb") as f:
+            f.write(await image.read())
+        
+        tags = getTags.predict_tags(file_path)
+
+        if not tags:
+            raise HTTPException(status_code=400, detail="No tags were generated from the image")
+        
+        tags = list(set(tags))  
+        if not all(isinstance(tag, str) for tag in tags):
+            raise HTTPException(status_code=400, detail="Tags must be strings")
+
+        try:
+            tags_vector = sentence_model.encode(tags)  
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error encoding tags: {str(e)}")
+        
+        img_context = {
+            'tags': tags,
+            'tags_vector': tags_vector.tolist()
+        }
+        return img_context
+
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid JSON format")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
 if __name__ == '__main__':
     import uvicorn

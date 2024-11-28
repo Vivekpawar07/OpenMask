@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "ml backend"
+name = "ml-backend"
 version = "0.1.0"
 description = ""
 authors = ["vivek pawar <vivekpawarvp07@gmail.com>"]
@@ -34,6 +34,8 @@ pytorch-lightning = "^2.4.0"
 fastai = "^2.7.18"
 catboost = "^1.2.7"
 gensim = "^4.3.3"
+setuptools = "^75.6.0"
+torchvision = "^0.20.1"
 
 [build-system]
 requires = ["poetry-core"]

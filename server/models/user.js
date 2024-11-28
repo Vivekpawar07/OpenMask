@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
-const report =[{
+const report = [{
     reportedBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',  
@@ -19,6 +19,10 @@ const report =[{
 }];
 
 const userSchema = new Schema({
+    fullName: {
+        type: String,
+        maxlength: 50,
+    },
     username: {
         type: String,
         required: true,
@@ -35,18 +39,58 @@ const userSchema = new Schema({
         required: true,
         minlength: 8,
     },
-    fullName:{
-        type:String,
-        maxlength:50,
-    },
-    dob: {
-        type: Date,
-        required: true,
-    },
     profilePic: {
         type: String, 
         default: 'defaultProfilePic.jpg',
     },
+    imgEmbedding: {
+        type: [Number],
+    },
+    latestActiveLocation: {
+        lat: { type: Number },
+        lng: { type: Number },
+    },
+    loginTime: {
+        type: Date,
+        default: Date.now
+    },
+    contentLiked: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Content'
+    }],
+    contentTimeSpent: [{
+        contentId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Content'
+        },
+        timeSpent: { 
+            type: Number,
+            default: 0
+        }
+    }],
+    contentUserInterested: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Content'
+    }],
+    contentUserContext: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Content' 
+    }],
+    recentSearch: [{
+        query: { type: String },
+        searchedAt: { type: Date, default: Date.now }
+    }],
+    mostInteractionWith: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }],
+    locality: {
+        type: String 
+    },
+    trendsInLocality: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Content'
+    }],
     followers: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User', 
@@ -55,46 +99,41 @@ const userSchema = new Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User', 
     }],
-    posts: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Post', 
-    }],
+    dob: {
+        type: Date,
+        required: true,
+    },
     bio: {
         type: String,
         maxlength: 160, 
     },
-    gender: {
-        type: String, 
-        enum: ['male', 'female', 'others']
-    },
-    likes: {
-        type: mongoose.Schema.Types.ObjectId, 
-        ref: 'Post'  
-    }, 
-    interests: [{
-        type: String,
-        enum: ['technology', 'sports', 'music', 'art', 'gaming', 'fitness', 'cooking', 'travel', 'science', 'education'] // example interests
-    }],
-    blocked:[{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'  
-    }],
     reports: report,
-    isVerified: {type:Boolean,default: false},
-    imgEmbedding:{
-        type: [Number] 
+    isVerified: {
+        type: Boolean,
+        default: false
     },
-    location: {
-        lat: {
-            type: Number,
-            required: false
+    engagementScore: {
+        type: Number,
+        default: 0
+    },
+    recommendedForUser: [{ 
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Content'
+    }],
+    behavioralCluster: { 
+        type: String 
+    },
+    recommendationFeedback: [{ 
+        contentId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Content'
         },
-        lng: {
-            type: Number,
-            required: false
+        feedback: {
+            type: String,
+            enum: ['like', 'dislike', 'neutral']
         }
-    }
-}, { timestamps: true }); 
+    }],
+}, { timestamps: true });
 
 const UserModel = mongoose.model('User', userSchema);
 
